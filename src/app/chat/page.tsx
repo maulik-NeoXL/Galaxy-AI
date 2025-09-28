@@ -70,20 +70,22 @@ const ChatPage = () => {
       if (messageIndex === -1) return;
 
       const editedMessage = messages[messageIndex];
+      const updatedContent = editContent.trim();
       
-      // First, close the edit UI and show the updated message
+      // First, close the edit UI
       setEditingMessageId(null);
       setEditContent('');
       
       // Update the message content
       setMessages(prev => prev.map(msg => 
-        msg.id === editingMessageId ? { ...msg, content: editContent.trim() } : msg
+        msg.id === editingMessageId ? { ...msg, content: updatedContent } : msg
       ));
 
-      // If it's a user message, regenerate the assistant response
+      // If it's a user message, regenerate the assistant response with updated content
       if (editedMessage.role === 'user') {
-        await regenerateResponse(messageIndex);
+        await regenerateResponse(messageIndex, updatedContent);
       }
+      // Assistant messages don't trigger regeneration
     }
   };
 
@@ -92,11 +94,17 @@ const ChatPage = () => {
     setEditContent('');
   };
 
-  const regenerateResponse = async (userMessageIndex: number) => {
+  const regenerateResponse = async (userMessageIndex: number, updatedContent: string) => {
     setIsLoading(true);
     try {
-      // Get all messages up to the edited user message
-      const messagesUpToEdit = messages.slice(0, userMessageIndex + 1);
+      // Get all messages up to the edited user message (excluding the edited message)
+      const messagesUpToEdit = messages.slice(0, userMessageIndex);
+      
+      // Add the updated user message
+      const updatedMessages = [
+        ...messagesUpToEdit,
+        { id: messages[userMessageIndex].id, role: 'user' as const, content: updatedContent }
+      ];
       
       // Remove any assistant messages after the edited user message
       setMessages(prev => prev.slice(0, userMessageIndex + 1));
@@ -107,7 +115,7 @@ const ChatPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messagesUpToEdit,
+          messages: updatedMessages,
           model: selectedModel,
         }),
       });
@@ -259,6 +267,12 @@ const ChatPage = () => {
                       <textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSaveEdit();
+                          }
+                        }}
                         className="flex-1 bg-transparent border-none outline-none resize-none text-base text-black placeholder-gray-500"
                         rows={Math.max(3, editContent.split('\n').length)}
                         autoFocus
@@ -318,7 +332,7 @@ const ChatPage = () => {
                       )}
                     </div>
                   )}
-                  {message.role === 'user' && (
+                  {message.role === 'user' && editingMessageId !== message.id && (
                     <div className="flex items-center gap-2 mt-2 px-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -351,7 +365,7 @@ const ChatPage = () => {
                       </Tooltip>
                     </div>
                   )}
-                  {message.role === 'assistant' && (
+                  {message.role === 'assistant' && editingMessageId !== message.id && (
                     <div className="flex items-center gap-2 mt-2 px-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -397,19 +411,6 @@ const ChatPage = () => {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Share</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button 
-                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                            onClick={() => handleEditMessage(message.id, message.content)}
-                          >
-                            <Pencil className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Edit</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
