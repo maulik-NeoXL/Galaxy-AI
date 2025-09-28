@@ -59,7 +59,7 @@ const ChatPage = () => {
     }
   }, [searchParams]);
 
-  const handleEditMessage = (messageId: string, content: string) => {
+  const handleEditMessage = (_messageId: string, _content: string) => {
     // setEditingMessageId(messageId);
     // setEditContent(content);
   };
@@ -386,7 +386,7 @@ const ChatPage = () => {
                                       Deep research
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                      <Image className="w-4 h-4 mr-2" alt="" />
+                                      <Image className="w-4 h-4 mr-2" />
                                       Create image
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
