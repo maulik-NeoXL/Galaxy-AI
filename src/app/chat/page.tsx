@@ -22,8 +22,8 @@ const ChatPage = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string}>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  // const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  // const [editContent, setEditContent] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const [selectedModel, setSelectedModel] = useState('GPT-3.5 Turbo');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -59,38 +59,98 @@ const ChatPage = () => {
     }
   }, [searchParams]);
 
-  const handleEditMessage = () => {
-    // setEditingMessageId(messageId);
-    // setEditContent(content);
+  const handleEditMessage = (messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setEditContent(content);
   };
 
-  // const handleSaveEdit = () => {
-  //   if (editingMessageId && editContent.trim()) {
-  //     setMessages(prev => prev.map(msg => 
-  //       msg.id === editingMessageId ? { ...msg, content: editContent.trim() } : msg
-  //     ));
-  //     setEditingMessageId(null);
-  //     setEditContent('');
-  //   }
-  // };
+  const handleSaveEdit = async () => {
+    if (editingMessageId && editContent.trim()) {
+      const messageIndex = messages.findIndex(msg => msg.id === editingMessageId);
+      if (messageIndex === -1) return;
 
-  // const handleCancelEdit = () => {
-  //   setEditingMessageId(null);
-  //   setEditContent('');
-  // };
+      const editedMessage = messages[messageIndex];
+      
+      // First, close the edit UI and show the updated message
+      setEditingMessageId(null);
+      setEditContent('');
+      
+      // Update the message content
+      setMessages(prev => prev.map(msg => 
+        msg.id === editingMessageId ? { ...msg, content: editContent.trim() } : msg
+      ));
+
+      // If it's a user message, regenerate the assistant response
+      if (editedMessage.role === 'user') {
+        await regenerateResponse(messageIndex);
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const regenerateResponse = async (userMessageIndex: number) => {
+    setIsLoading(true);
+    try {
+      // Get all messages up to the edited user message
+      const messagesUpToEdit = messages.slice(0, userMessageIndex + 1);
+      
+      // Remove any assistant messages after the edited user message
+      setMessages(prev => prev.slice(0, userMessageIndex + 1));
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messagesUpToEdit,
+          model: selectedModel,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to regenerate response');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const assistantMessage = { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: '' };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessage.id 
+            ? { ...msg, content: msg.content + chunk }
+            : msg
+        ));
+      }
+    } catch (error) {
+      console.error('Error regenerating response:', error);
+      toast.error('Failed to regenerate response');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleNewChat = () => {
     setMessages([]);
     setInput('');
-    // setEditingMessageId(null);
-    // setEditContent('');
+    setEditingMessageId(null);
+    setEditContent('');
   };
 
   const handleDeleteChat = () => {
     setMessages([]);
     setInput('');
-    // setEditingMessageId(null);
-    // setEditContent('');
+    setEditingMessageId(null);
+    setEditContent('');
     setIsDeleteModalOpen(false);
     toast.success('Chat deleted successfully');
   };
@@ -193,44 +253,71 @@ const ChatPage = () => {
                 key={message.id}
                 className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`${message.role === 'user' ? 'group' : 'flex flex-col'} ${message.role === 'user' ? 'max-w-2xl' : 'max-w-full w-full'}`}>
-                  <div
-                    className={`rounded-2xl px-4 py-2 block ${message.role === 'user' ? 'w-fit' : 'w-full max-w-full'} ${message.role === 'user' ? 'break-all' : 'break-words'} overflow-hidden ${
-                      message.role === 'user'
-                        ? 'text-black text-base leading-normal bg-gray-200'
-                        : 'bg-white text-gray-900 text-base'
-                    }`}
-                  >
-                    {message.role === 'assistant' && message.content.includes('```') ? (
-                      <div className="space-y-4 w-full max-w-full overflow-hidden block">
-                        {message.content.split('```').map((part, index) => {
-                          if (index % 2 === 1) {
-                            // This is a code block
-                            const lines = part.split('\n');
-                            const language = lines[0] || 'text';
-                            const code = lines.slice(1).join('\n');
-                            return (
-                              <CodeBlock
-                                key={index}
-                                code={code}
-                                language={language}
-                              />
-                            );
-                          } else if (part.trim()) {
-                            // This is regular text
-                            return (
-                              <p key={index} className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">
-                                {part}
-                              </p>
-                            );
-                          }
-                          return null;
-                        })}
+                <div className={`${message.role === 'user' ? 'group' : 'flex flex-col'} ${editingMessageId === message.id ? 'w-full max-w-full' : message.role === 'user' ? 'max-w-2xl' : 'max-w-full w-full'}`}>
+                  {editingMessageId === message.id ? (
+                    <div className="rounded-2xl px-6 py-4 block w-full bg-gray-100 min-h-[120px] flex flex-col">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="flex-1 bg-transparent border-none outline-none resize-none text-base text-black placeholder-gray-500"
+                        rows={Math.max(3, editContent.split('\n').length)}
+                        autoFocus
+                        placeholder="Type your message..."
+                      />
+                      <div className="flex gap-3 mt-4 justify-end">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-4 py-2 bg-white border border-gray-300 text-black rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          className="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition-colors"
+                        >
+                          Send
+                        </button>
                       </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">{message.content}</p>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={`rounded-2xl px-4 py-2 block ${message.role === 'user' ? 'w-fit' : 'w-full max-w-full'} ${message.role === 'user' ? 'break-all' : 'break-words'} overflow-hidden ${
+                        message.role === 'user'
+                          ? 'text-black text-base leading-normal bg-gray-200'
+                          : 'bg-white text-gray-900 text-base'
+                      }`}
+                    >
+                      {message.role === 'assistant' && message.content.includes('```') ? (
+                        <div className="space-y-4 w-full max-w-full overflow-hidden block">
+                          {message.content.split('```').map((part, index) => {
+                            if (index % 2 === 1) {
+                              // This is a code block
+                              const lines = part.split('\n');
+                              const language = lines[0] || 'text';
+                              const code = lines.slice(1).join('\n');
+                              return (
+                                <CodeBlock
+                                  key={index}
+                                  code={code}
+                                  language={language}
+                                />
+                              );
+                            } else if (part.trim()) {
+                              // This is regular text
+                              return (
+                                <p key={index} className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">
+                                  {part}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">{message.content}</p>
+                      )}
+                    </div>
+                  )}
                   {message.role === 'user' && (
                     <div className="flex items-center gap-2 mt-2 px-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Tooltip>
@@ -253,7 +340,7 @@ const ChatPage = () => {
                         <TooltipTrigger asChild>
                           <button 
                             className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                            onClick={() => handleEditMessage()}
+                            onClick={() => handleEditMessage(message.id, message.content)}
                           >
                             <Pencil className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
                           </button>
@@ -310,6 +397,19 @@ const ChatPage = () => {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Share</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button 
+                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                            onClick={() => handleEditMessage(message.id, message.content)}
+                          >
+                            <Pencil className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
