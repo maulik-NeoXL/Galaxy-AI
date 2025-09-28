@@ -13,8 +13,8 @@ const LandingPage = () => {
   // const [email, setEmail] = useState("");
   // const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
-  const { signIn } = useSignIn();
-  const { signUp } = useSignUp();
+  // const { signIn } = useSignIn();
+  // const { signUp } = useSignUp();
 
   // useEffect(() => {
   //   setIsMounted(true);

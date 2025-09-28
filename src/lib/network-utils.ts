@@ -24,7 +24,7 @@ export class NetworkError extends Error {
 /**
  * Check if an error is retryable
  */
-export function isRetryableError(error: any): boolean {
+export function isRetryableError(error: unknown): boolean {
   // First check if it's a NetworkError with explicit retryable flag
   if (error instanceof NetworkError) {
     return error.retryable;
@@ -82,7 +82,7 @@ export async function withRetry<T>(
     backoffFactor = 2
   } = options;
 
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -179,7 +179,7 @@ export async function fetchSilent(
 /**
  * Get user-friendly error message
  */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (error instanceof NetworkError) {
     if (error.code === 'ERR_NETWORK_CHANGED') {
       return 'Network connection changed. Please check your internet connection and try again.';

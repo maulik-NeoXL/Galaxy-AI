@@ -222,7 +222,7 @@ const ChatPage = () => {
       }
       
       // Save to MongoDB with retry logic
-      const response = await fetchWithRetry('/api/chats', {
+      await fetchWithRetry('/api/chats', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -474,7 +474,7 @@ const ChatPage = () => {
       // Prepare messages with context
       const contextMessages = mem0Context.length > 0 
         ? [
-            { role: 'system', content: `Previous conversation context: ${mem0Context.map((m: any) => `${m.role}: ${m.content}`).join('\n')}` },
+            { role: 'system', content: `Previous conversation context: ${mem0Context.map((m: { role: string; content: string }) => `${m.role}: ${m.content}`).join('\n')}` },
             ...messages,
             userMessage
           ]
