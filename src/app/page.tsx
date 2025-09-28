@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SiOpenai } from "react-icons/si";
+import { useUser, useSignIn, useSignUp } from '@clerk/nextjs';
 import { cn } from "@/lib/utils";
 
 const LandingPage = () => {
@@ -11,45 +12,45 @@ const LandingPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   // const [email, setEmail] = useState("");
   // const [isMounted, setIsMounted] = useState(false);
-  // const { user } = useUser();
-  // const { signIn } = useSignIn();
-  // const { signUp } = useSignUp();
+  const { user } = useUser();
+  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
 
   // useEffect(() => {
   //   setIsMounted(true);
   // }, []);
 
   const handleGetStarted = async () => {
-    // if (user) {
-    //   // User is already signed in, redirect to chat
-    //   router.push("/chat");
-    //   return;
-    // }
+    if (user) {
+      // User is already signed in, redirect to chat
+      router.push("/chat");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Redirect directly to chat
-      router.push("/chat");
+      // Redirect to Clerk sign-up page
+      router.push("/sign-up");
     } catch (error) {
-      console.error("Error redirecting to chat:", error);
+      console.error("Error redirecting to sign-up:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignIn = async () => {
-    // if (user) {
-    //   // User is already signed in, redirect to chat
-    //   router.push("/chat");
-    //   return;
-    // }
+    if (user) {
+      // User is already signed in, redirect to chat
+      router.push("/chat");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Redirect directly to chat
-      router.push("/chat");
+      // Redirect to Clerk sign-in page
+      router.push("/sign-in");
     } catch (error) {
-      console.error("Error redirecting to chat:", error);
+      console.error("Error redirecting to sign-in:", error);
     } finally {
       setIsLoading(false);
     }
