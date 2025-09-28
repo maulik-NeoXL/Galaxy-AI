@@ -59,7 +59,7 @@ const ChatPage = () => {
     }
   }, [searchParams]);
 
-  const handleEditMessage = (_messageId: string, _content: string) => {
+  const handleEditMessage = () => {
     // setEditingMessageId(messageId);
     // setEditContent(content);
   };
@@ -253,7 +253,7 @@ const ChatPage = () => {
                         <TooltipTrigger asChild>
                           <button 
                             className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                            onClick={() => handleEditMessage(message.id, message.content)}
+                            onClick={() => handleEditMessage()}
                           >
                             <Pencil className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
                           </button>
@@ -386,7 +386,7 @@ const ChatPage = () => {
                                       Deep research
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                      <Image className="w-4 h-4 mr-2" />
+                                      <Image className="w-4 h-4 mr-2" aria-label="Create image" />
                                       Create image
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
