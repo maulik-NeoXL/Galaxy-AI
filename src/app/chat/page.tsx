@@ -22,8 +22,8 @@ const ChatPage = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string}>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  // const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  // const [editContent, setEditContent] = useState('');
   const [selectedModel, setSelectedModel] = useState('GPT-3.5 Turbo');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,8 +60,8 @@ const ChatPage = () => {
   }, [searchParams]);
 
   const handleEditMessage = (messageId: string, content: string) => {
-    setEditingMessageId(messageId);
-    setEditContent(content);
+    // setEditingMessageId(messageId);
+    // setEditContent(content);
   };
 
   // const handleSaveEdit = () => {
@@ -82,15 +82,15 @@ const ChatPage = () => {
   const handleNewChat = () => {
     setMessages([]);
     setInput('');
-    setEditingMessageId(null);
-    setEditContent('');
+    // setEditingMessageId(null);
+    // setEditContent('');
   };
 
   const handleDeleteChat = () => {
     setMessages([]);
     setInput('');
-    setEditingMessageId(null);
-    setEditContent('');
+    // setEditingMessageId(null);
+    // setEditContent('');
     setIsDeleteModalOpen(false);
     toast.success('Chat deleted successfully');
   };
@@ -353,7 +353,7 @@ const ChatPage = () => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e as React.FormEvent<HTMLFormElement>);
+                      handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
                     }
                   }}
                   placeholder="What would you like to know?"

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SiOpenai } from "react-icons/si";
-import { useSignIn, useSignUp, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { cn } from "@/lib/utils";
 
 const LandingPage = () => {
