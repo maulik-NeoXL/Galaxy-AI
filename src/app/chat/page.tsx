@@ -411,7 +411,7 @@ const ChatPage = () => {
                       )}
                     </div>
                   )}
-                  {message.role === 'user' && editingMessageId !== message.id && !message.files && (
+                  {message.role === 'user' && editingMessageId !== message.id && (!message.files || message.files.length === 0) && (
                     <div className="flex items-center gap-2 mt-2 px-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Tooltip>
                         <TooltipTrigger asChild>
