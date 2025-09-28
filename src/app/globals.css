@@ -123,3 +123,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .input-16px {
+    font-size: 16px !important;
+  }
+  .input-16px::placeholder {
+    font-size: 16px !important;
+  }
+  
+}
