@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   const { messages, model } = await req.json();
 
   // Map display names to actual model IDs and providers
-  const modelMap: { [key: string]: { provider: any, modelId: string } } = {
+  const modelMap: { [key: string]: { provider: typeof openai | typeof google | typeof xai, modelId: string } } = {
     'GPT-3.5 Turbo': { provider: openai, modelId: 'gpt-3.5-turbo' },
     'GPT-4': { provider: openai, modelId: 'gpt-4' },
     'GPT-4 Turbo': { provider: openai, modelId: 'gpt-4-turbo' },

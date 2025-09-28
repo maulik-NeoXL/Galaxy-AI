@@ -10,15 +10,15 @@ import { cn } from "@/lib/utils";
 const LandingPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [isMounted, setIsMounted] = useState(false);
+  // const [email, setEmail] = useState("");
+  // const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
-  const { signIn } = useSignIn();
-  const { signUp } = useSignUp();
+  // const { signIn } = useSignIn();
+  // const { signUp } = useSignUp();
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // useEffect(() => {
+  //   setIsMounted(true);
+  // }, []);
 
   const handleGetStarted = async () => {
     if (user) {
@@ -56,10 +56,10 @@ const LandingPage = () => {
     }
   };
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleGetStarted();
-  };
+  // const handleEmailSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   handleGetStarted();
+  // };
 
   return (
     <div className="min-h-screen bg-white">

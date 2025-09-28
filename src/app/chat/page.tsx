@@ -1,20 +1,18 @@
 "use client";
 
-import { ChevronDown, Plus, Volume2, Send, Copy, ThumbsUp, ThumbsDown, Share, Paperclip, Telescope, Image, Lightbulb, BookOpen, MoreHorizontal, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { ChevronDown, Plus, Copy, ThumbsUp, ThumbsDown, Share, Paperclip, Telescope, Image, Lightbulb, BookOpen, Pencil, Check } from "lucide-react";
 import { MdDelete } from "react-icons/md";
 import { CiMicrophoneOn } from "react-icons/ci";
 import { RiVoiceprintFill } from "react-icons/ri";
 import { BsArrowUpCircleFill } from "react-icons/bs";
-import { SiMicrosoftsharepoint } from "react-icons/si";
-import { SiOpenai, SiGoogle, SiX } from "react-icons/si";
+import { SiOpenai, SiX } from "react-icons/si";
 import { RiGeminiFill } from "react-icons/ri";
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useChat } from "@ai-sdk/react";
 import CodeBlock from "@/components/CodeBlock";
 import { toast } from "sonner";
 
@@ -66,20 +64,20 @@ const ChatPage = () => {
     setEditContent(content);
   };
 
-  const handleSaveEdit = () => {
-    if (editingMessageId && editContent.trim()) {
-      setMessages(prev => prev.map(msg => 
-        msg.id === editingMessageId ? { ...msg, content: editContent.trim() } : msg
-      ));
-      setEditingMessageId(null);
-      setEditContent('');
-    }
-  };
+  // const handleSaveEdit = () => {
+  //   if (editingMessageId && editContent.trim()) {
+  //     setMessages(prev => prev.map(msg => 
+  //       msg.id === editingMessageId ? { ...msg, content: editContent.trim() } : msg
+  //     ));
+  //     setEditingMessageId(null);
+  //     setEditContent('');
+  //   }
+  // };
 
-  const handleCancelEdit = () => {
-    setEditingMessageId(null);
-    setEditContent('');
-  };
+  // const handleCancelEdit = () => {
+  //   setEditingMessageId(null);
+  //   setEditContent('');
+  // };
 
   const handleNewChat = () => {
     setMessages([]);
@@ -121,7 +119,7 @@ const ChatPage = () => {
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body');
 
-      let assistantMessage = { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: '' };
+      const assistantMessage = { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: '' };
       setMessages(prev => [...prev, assistantMessage]);
 
       while (true) {
@@ -355,7 +353,7 @@ const ChatPage = () => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e as any);
+                      handleSubmit(e as React.FormEvent<HTMLFormElement>);
                     }
                   }}
                   placeholder="What would you like to know?"
@@ -388,7 +386,7 @@ const ChatPage = () => {
                                       Deep research
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                      <Image className="w-4 h-4 mr-2" />
+                                      <Image className="w-4 h-4 mr-2" alt="" />
                                       Create image
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>

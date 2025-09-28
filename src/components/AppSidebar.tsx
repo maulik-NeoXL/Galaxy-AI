@@ -3,6 +3,7 @@
 import {
   Search,
 } from "lucide-react";
+import Link from "next/link";
 import { SiOpenai } from "react-icons/si";
 import { HiOutlinePencilAlt } from "react-icons/hi";
 import { TbFolderPlus } from "react-icons/tb";
