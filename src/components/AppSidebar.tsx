@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { useClerk } from '@clerk/nextjs';
+// import { useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 
 const mainItems = [
@@ -65,12 +65,12 @@ const chatItems: string[] = [];
 
 const AppSidebar = () => {
   const { state, toggleSidebar } = useSidebar();
-  const { signOut } = useClerk();
+  // const { signOut } = useClerk();
   const router = useRouter();
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      // await signOut();
       router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
