@@ -48,10 +48,7 @@ export async function POST(request: NextRequest) {
 
       case 'search':
         // Search messages in Mem0
-        const searchResults = await client.search({
-          query: filters.query,
-          filters: filters.filters
-        });
+        const searchResults = await client.search(filters.query);
         return NextResponse.json({ success: true, data: searchResults });
 
       default:

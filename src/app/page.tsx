@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SiOpenai } from "react-icons/si";
-import { useUser, useSignIn, useSignUp } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { cn } from "@/lib/utils";
 
 const LandingPage = () => {
