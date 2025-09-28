@@ -198,9 +198,7 @@ const AppSidebar = () => {
       <SidebarHeader className="py-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className={`flex items-center justify-between px-2 py-2 w-full group ${
-              state === "collapsed" ? "cursor-pointer" : ""
-            }`} onClick={state === "collapsed" ? toggleSidebar : undefined}>
+            <div className="flex items-center justify-between px-2 py-2 w-full group">
               <div className="flex items-center">
                 <div className="relative w-5 h-5">
                   <SiOpenai className={`w-5 h-5 transition-opacity ${
@@ -236,7 +234,7 @@ const AppSidebar = () => {
                           className="px-2 py-4 h-8 cursor-pointer hover:py-4 hover:bg-gray-200 transition-all duration-200"
                         >
                           <item.icon className="w-8 h-8" />
-                          <span className="text-sm">{item.title}</span>
+                          <span className={`text-sm transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>{item.title}</span>
                         </SidebarMenuButton>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px] flex flex-col gap-6 p-6">
@@ -315,7 +313,7 @@ const AppSidebar = () => {
                 <SidebarMenuItem key={project.id}>
                   <div className="group relative px-2 py-4 h-8 hover:bg-gray-200 transition-all duration-200 flex items-center justify-between cursor-pointer">
                     <Link href="#" className="flex-1">
-                      <span className="text-sm">{project.name}</span>
+                      <span className={`text-sm transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>{project.name}</span>
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -351,7 +349,7 @@ const AppSidebar = () => {
                 <SidebarMenuItem key={index}>
                   <SidebarMenuButton asChild size="sm" className={`px-2 py-4 h-8 hover:py-4 hover:bg-gray-200 transition-all duration-200 ${index === 0 ? "bg-sidebar-accent" : ""}`}>
                     <Link href="#">
-                      <span className="text-sm">{chat}</span>
+                      <span className={`text-sm transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>{chat}</span>
                     </Link>
                   </SidebarMenuButton>
                   {index === 1 && (

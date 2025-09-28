@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Plus, Copy, ThumbsUp, ThumbsDown, Share, Paperclip, Telescope, Image, Lightbulb, BookOpen, Pencil, Check } from "lucide-react";
+import { ChevronDown, Plus, Copy, ThumbsUp, ThumbsDown, Share, Paperclip, Telescope, Image, Lightbulb, BookOpen, Pencil, Check, X } from "lucide-react";
 import { MdDelete } from "react-icons/md";
 import { CiMicrophoneOn } from "react-icons/ci";
 import { RiVoiceprintFill } from "react-icons/ri";
@@ -20,10 +20,12 @@ const ChatPage = () => {
   const searchParams = useSearchParams();
   const [isMicMuted, setIsMicMuted] = useState(true);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string}>>([]);
+  const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string, files?: File[]}>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedModel, setSelectedModel] = useState('GPT-3.5 Turbo');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -92,6 +94,19 @@ const ChatPage = () => {
   const handleCancelEdit = () => {
     setEditingMessageId(null);
     setEditContent('');
+  };
+
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const regenerateResponse = async (userMessageIndex: number, updatedContent: string) => {
@@ -165,11 +180,17 @@ const ChatPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && selectedFiles.length === 0) return;
 
-    const userMessage = { id: Date.now().toString(), role: 'user' as const, content: input };
+    const userMessage = { 
+      id: Date.now().toString(), 
+      role: 'user' as const, 
+      content: input.trim(),
+      files: selectedFiles 
+    };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setSelectedFiles([]);
     setIsLoading(true);
 
     try {
@@ -294,45 +315,103 @@ const ChatPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className={`rounded-2xl px-4 py-2 block ${message.role === 'user' ? 'w-fit' : 'w-full max-w-full'} ${message.role === 'user' ? 'break-all' : 'break-words'} overflow-hidden ${
-                        message.role === 'user'
-                          ? 'text-black text-base leading-normal bg-gray-200'
-                          : 'bg-white text-gray-900 text-base'
-                      }`}
-                    >
-                      {message.role === 'assistant' && message.content.includes('```') ? (
-                        <div className="space-y-4 w-full max-w-full overflow-hidden block">
-                          {message.content.split('```').map((part, index) => {
-                            if (index % 2 === 1) {
-                              // This is a code block
-                              const lines = part.split('\n');
-                              const language = lines[0] || 'text';
-                              const code = lines.slice(1).join('\n');
-                              return (
-                                <CodeBlock
-                                  key={index}
-                                  code={code}
-                                  language={language}
-                                />
-                              );
-                            } else if (part.trim()) {
-                              // This is regular text
-                              return (
-                                <p key={index} className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">
-                                  {part}
-                                </p>
-                              );
-                            }
-                            return null;
-                          })}
+                    <div className="flex flex-col gap-2">
+                      {/* File Attachments */}
+                      {message.files && message.files.length > 0 && (
+                        <div className={`flex flex-col gap-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                          {/* Image Thumbnails */}
+                          {message.files.filter(file => file.type.startsWith('image/')).length > 0 && (
+                            <div className="flex gap-2">
+                              {message.files
+                                .filter(file => file.type.startsWith('image/'))
+                                .map((file, index) => (
+                                  <div key={index} className="w-48 h-48 rounded-lg overflow-hidden">
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={file.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                          
+                          {/* Document Files */}
+                          {message.files
+                            .filter(file => !file.type.startsWith('image/'))
+                            .map((file, index) => (
+                              <div key={index} className="flex items-center gap-3 bg-gray-100 rounded-lg p-3 w-fit max-w-[400px]">
+                                {file.type === 'application/pdf' ? (
+                                  <div className="w-10 h-10 bg-red-500 rounded flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-black text-sm break-words">
+                                    {file.name}
+                                  </div>
+                                  <div className="text-gray-500 text-xs">
+                                    {file.type === 'application/pdf' ? 'PDF' : 
+                                     file.type.includes('document') ? 'DOCUMENT' : 
+                                     file.type.split('/')[1]?.toUpperCase() || 'FILE'}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                         </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">{message.content}</p>
+                      )}
+                      
+                      {/* Message Content */}
+                      {message.content && (
+                        <div
+                          className={`rounded-2xl px-4 py-2 block ${message.role === 'user' ? 'w-fit ml-auto' : 'w-full max-w-full'} ${message.role === 'user' ? 'break-all' : 'break-words'} overflow-hidden ${
+                            message.role === 'user'
+                              ? 'text-black text-base leading-normal bg-gray-200'
+                              : 'bg-white text-gray-900 text-base'
+                          }`}
+                        >
+                          {message.role === 'assistant' && message.content.includes('```') ? (
+                            <div className="space-y-4 w-full max-w-full overflow-hidden block">
+                              {message.content.split('```').map((part, index) => {
+                                if (index % 2 === 1) {
+                                  // This is a code block
+                                  const lines = part.split('\n');
+                                  const language = lines[0] || 'text';
+                                  const code = lines.slice(1).join('\n');
+                                  return (
+                                    <CodeBlock
+                                      key={index}
+                                      code={code}
+                                      language={language}
+                                    />
+                                  );
+                                } else if (part.trim()) {
+                                  // This is regular text
+                                  return (
+                                    <p key={index} className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">
+                                      {part}
+                                    </p>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words w-full max-w-full overflow-hidden block">{message.content}</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
-                  {message.role === 'user' && editingMessageId !== message.id && (
+                  {message.role === 'user' && editingMessageId !== message.id && !message.files && (
                     <div className="flex items-center gap-2 mt-2 px-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -446,6 +525,65 @@ const ChatPage = () => {
           {/* Input Field */}
           <form onSubmit={handleSubmit} className="relative">
             <div className="bg-white border border-gray-300 rounded-3xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              {/* Selected Files Preview */}
+              {selectedFiles.length > 0 && (
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="flex gap-2 overflow-x-auto">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="relative flex-shrink-0">
+                        {file.type.startsWith('image/') ? (
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="absolute top-1 right-1 w-5 h-5 bg-black rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors z-10"
+                            >
+                              <X className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="relative bg-gray-100 rounded-lg p-3 w-fit max-w-[400px] flex items-center gap-3">
+                            {file.type === 'application/pdf' ? (
+                              <div className="w-10 h-10 bg-red-500 rounded flex items-center justify-center flex-shrink-0">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-black text-sm break-words">
+                                {file.name}
+                              </div>
+                              <div className="text-gray-500 text-xs">
+                                {file.type === 'application/pdf' ? 'PDF' : 
+                                 file.type.includes('document') ? 'DOCUMENT' : 
+                                 file.type.split('/')[1]?.toUpperCase() || 'FILE'}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="w-5 h-5 bg-black rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors flex-shrink-0"
+                            >
+                              <X className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Text Input Area */}
               <div className="px-4 py-3">
                 <Textarea
@@ -467,6 +605,16 @@ const ChatPage = () => {
               {/* Separator */}
               <div className="border-t border-gray-200"></div>
               
+              {/* File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
               {/* Control Bar */}
               <div className="flex items-center justify-between px-4 py-3">
                 {/* Left side - Model Selector with Plus */}
@@ -478,7 +626,7 @@ const ChatPage = () => {
                       </button>
                     </DropdownMenuTrigger>
                                   <DropdownMenuContent className="w-56" align="start">
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleFileUpload}>
                                       <Paperclip className="w-4 h-4 mr-2" />
                                       Add photos & files
                                     </DropdownMenuItem>
