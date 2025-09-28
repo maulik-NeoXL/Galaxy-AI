@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SiOpenai } from "react-icons/si";
-import { useUser } from '@clerk/nextjs';
 import { cn } from "@/lib/utils";
 
 const LandingPage = () => {
@@ -12,7 +11,7 @@ const LandingPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   // const [email, setEmail] = useState("");
   // const [isMounted, setIsMounted] = useState(false);
-  const { user } = useUser();
+  // const { user } = useUser();
   // const { signIn } = useSignIn();
   // const { signUp } = useSignUp();
 
@@ -21,36 +20,36 @@ const LandingPage = () => {
   // }, []);
 
   const handleGetStarted = async () => {
-    if (user) {
-      // User is already signed in, redirect to chat
-      router.push("/chat");
-      return;
-    }
+    // if (user) {
+    //   // User is already signed in, redirect to chat
+    //   router.push("/chat");
+    //   return;
+    // }
 
     setIsLoading(true);
     try {
-      // Redirect to Clerk sign-up page
-      router.push("/sign-up");
+      // Redirect directly to chat
+      router.push("/chat");
     } catch (error) {
-      console.error("Error redirecting to sign-up:", error);
+      console.error("Error redirecting to chat:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignIn = async () => {
-    if (user) {
-      // User is already signed in, redirect to chat
-      router.push("/chat");
-      return;
-    }
+    // if (user) {
+    //   // User is already signed in, redirect to chat
+    //   router.push("/chat");
+    //   return;
+    // }
 
     setIsLoading(true);
     try {
-      // Redirect to Clerk sign-in page
-      router.push("/sign-in");
+      // Redirect directly to chat
+      router.push("/chat");
     } catch (error) {
-      console.error("Error redirecting to sign-in:", error);
+      console.error("Error redirecting to chat:", error);
     } finally {
       setIsLoading(false);
     }

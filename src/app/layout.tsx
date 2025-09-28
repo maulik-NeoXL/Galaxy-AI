@@ -4,7 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { cookies } from "next/headers";
-import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -26,24 +25,22 @@ export default async function RootLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
   
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${inter.variable} antialiased`}
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${inter.variable} antialiased`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <ConditionalLayout defaultOpen={defaultOpen}>
-              {children}
-            </ConditionalLayout>
-            <Toaster />
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+          <ConditionalLayout defaultOpen={defaultOpen}>
+            {children}
+          </ConditionalLayout>
+          <Toaster />
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }
