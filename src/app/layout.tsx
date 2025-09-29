@@ -31,7 +31,7 @@ export default async function RootLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
   
   return (
-    <ClerkProvider>
+    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en" suppressHydrationWarning>
         <body
           className={`${inter.variable} antialiased`}
