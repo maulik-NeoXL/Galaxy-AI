@@ -34,6 +34,7 @@ const ChatPage = () => {
   const [currentChatTitle, setCurrentChatTitle] = useState<string>('GPT-3.5 Turbo');
   // Removed userId as it's not needed for localStorage
   const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const models = [
     { name: 'GPT-3.5 Turbo', logo: SiOpenai },
@@ -59,6 +60,7 @@ const ChatPage = () => {
 
   // Set client flag on mount and initialize chatId
   useEffect(() => {
+    setMounted(true);
     setIsClient(true);
     // Initialize chatId only on client side to avoid hydration mismatch
     if (!chatId) {
@@ -538,6 +540,15 @@ const ChatPage = () => {
         <div className="flex items-center justify-center h-full">
           <div className="text-gray-500">Loading...</div>
         </div>
+      </div>
+    );
+  }
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="flex flex-col h-screen bg-white items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }

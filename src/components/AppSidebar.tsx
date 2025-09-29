@@ -104,6 +104,7 @@ const AppSidebar = () => {
   const [projectToDelete, setProjectToDelete] = useState<{id: string, name: string} | null>(null);
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const categories = [
     { name: 'Investing', icon: FaDollarSign, color: 'bg-green-500' },
@@ -141,6 +142,7 @@ const AppSidebar = () => {
 
   // Set client state and load chats on mount
   useEffect(() => {
+    setMounted(true);
     setIsClient(true);
     loadChatItems();
   }, [isClient, loadChatItems]);
@@ -300,6 +302,19 @@ const AppSidebar = () => {
     setIsRenameModalOpen(false);
   };
   
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="w-64 bg-white border-r border-gray-200 p-4">
+        <div className="animate-pulse space-y-2">
+          <div className="h-4 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded"></div> 
+          <div className="h-4 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="py-2">
