@@ -73,25 +73,37 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const chatId = searchParams.get('chatId');
+  
+  console.log('DELETE request for chatId:', chatId);
+  
+  if (!chatId) {
+    return NextResponse.json({ error: 'Missing chatId' }, { status: 400 });
+  }
+  
   try {
+    console.log('Connecting to MongoDB...');
     await connectDB();
+    console.log('MongoDB connected successfully');
     
-    const { searchParams } = new URL(request.url);
-    const chatId = searchParams.get('chatId');
-    
-    if (!chatId) {
-      return NextResponse.json({ error: 'Missing chatId' }, { status: 400 });
-    }
-    
+    console.log('Deleting chat with ID:', chatId);
     const result = await Chat.deleteOne({ chatId });
+    console.log('Delete result:', result);
     
     if (result.deletedCount === 0) {
+      console.log('Chat not found in database');
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
     }
     
+    console.log('Chat deleted successfully');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting chat:', error);
-    return NextResponse.json({ error: 'Failed to delete chat' }, { status: 500 });
+    console.error('Detailed error in DELETE:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack available');
+    return NextResponse.json({ 
+      error: 'Failed to delete chat',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

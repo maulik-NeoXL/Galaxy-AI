@@ -193,14 +193,19 @@ const AppSidebar = () => {
   };
 
   const handleDeleteChat = async (chatId: string) => {
+    console.log('Deleting chat with ID:', chatId);
     try {
-      await fetchWithRetry(`/api/chats?chatId=${chatId}`, {
+      const response = await fetch(`/api/chats?chatId=${chatId}`, {
         method: 'DELETE',
-      }, {
-        maxRetries: 2,
-        baseDelay: 1000,
-        maxDelay: 3000
       });
+      
+      console.log('Delete response status:', response.status);
+      const responseData = await response.json();
+      console.log('Delete response data:', responseData);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseData.error || 'Unknown error'}`);
+      }
       
       // Remove the chat from local state immediately
       setChatItems(prev => prev.filter(chat => chat.id !== chatId));
@@ -219,7 +224,7 @@ const AppSidebar = () => {
       toast.success('Chat deleted successfully');
     } catch (error) {
       console.error('Error deleting chat:', error);
-      toast.error(getErrorMessage(error));
+      toast.error(`Failed to delete chat: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
