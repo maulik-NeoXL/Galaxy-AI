@@ -76,18 +76,18 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Handle double click and text selection for Ask ChatGPT button
-  const handleDoubleClick = (messageId: string, event: React.MouseEvent) => {
+  // Handle text selection and Ask ChatGPT button
+  const handleTextSelection = (messageId: string, event: React.MouseEvent) => {
     // Small delay to ensure selection is complete
     setTimeout(() => {
       const selection = window.getSelection();
-      console.log('Double click - Selection:', selection?.toString());
+      console.log('Selection:', selection?.toString());
       if (selection && selection.toString().trim()) {
         const selectedText = selection.toString().trim();
-        console.log('Double click - Selected text:', selectedText);
+        console.log('Selected text:', selectedText);
         if (selectedText.length > 0) {
           const rect = selection.getRangeAt(0).getBoundingClientRect();
-          console.log('Double click - Selection rect:', rect);
+          console.log('Selection rect:', rect);
           setSelectedText({
             text: selectedText,
             messageId: messageId,
@@ -868,7 +868,8 @@ const ChatPage = () => {
                               ? 'text-black text-base leading-normal bg-gray-200'
                         : 'bg-white text-gray-900 text-base'
                     }`}
-                          onDoubleClick={(e) => message.role === 'assistant' && handleDoubleClick(message.id, e)}
+                          onMouseUp={(e) => message.role === 'assistant' && handleTextSelection(message.id, e)}
+                          onTouchEnd={(e) => message.role === 'assistant' && handleTextSelection(message.id, e as any)}
                   >
                     {message.role === 'assistant' && message.content.includes('```') ? (
                       <div className="space-y-4 w-full max-w-full overflow-hidden block">
