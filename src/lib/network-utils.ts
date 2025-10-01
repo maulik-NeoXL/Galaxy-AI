@@ -102,6 +102,7 @@ export async function withRetry<T>(
 
       const delay = calculateDelay(attempt, baseDelay, maxDelay, backoffFactor);
       // Only log retry attempts for non-404 errors to reduce console noise
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((error as any)?.status !== 404) {
         console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`, error);
       }
@@ -112,6 +113,7 @@ export async function withRetry<T>(
   throw new NetworkError(
     `Failed after ${maxRetries} attempts: ${(lastError as Error)?.message || 'Unknown error'}`,
     undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (lastError as any)?.code,
     false
   );
