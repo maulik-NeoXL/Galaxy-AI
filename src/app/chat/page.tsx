@@ -628,8 +628,10 @@ const ChatPage = () => {
         // Only update messages, don't regenerate title
         saveChatToMongoDB(finalMessages, false);
         
-        // Save to Mem0 for AI memory
-        saveToMem0([userMessage, assistantMessage]);
+        // Save to Mem0 for AI memory (without files for now)
+        const mem0UserMessage = { ...userMessage, files: undefined };
+        const mem0AssistantMessage = { ...assistantMessage, files: undefined };
+        saveToMem0([mem0UserMessage, mem0AssistantMessage]);
       }
       
     } catch (error) {
