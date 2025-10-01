@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         url: (result as any).secure_url,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         publicId: (result as any).public_id,
         originalName: file.name,
         size: file.size,
