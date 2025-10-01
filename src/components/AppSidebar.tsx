@@ -414,22 +414,22 @@ const AppSidebar = () => {
         <div className="h-full flex flex-col">
           {/* Fixed sections - New Chat, Projects */}
           <div className="flex-shrink-0">
-        <SidebarGroup className="px-2">
-          <SidebarGroupContent>
-            <SidebarMenu className="flex flex-col gap-3">
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  {item.title === "New project" ? (
-                    <Dialog open={isNewProjectModalOpen} onOpenChange={setIsNewProjectModalOpen}>
-                      <DialogTrigger asChild>
-                        <SidebarMenuButton 
-                          size="sm" 
-                          className="px-2 py-4 h-8 cursor-pointer hover:py-4 hover:bg-gray-200 transition-all duration-200"
-                        >
-                          <item.icon className="w-5 h-5" />
-                          <span className={`transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '14px' }}>{item.title}</span>
-                        </SidebarMenuButton>
-                      </DialogTrigger>
+            <SidebarGroup className="px-2">
+              <SidebarGroupContent>
+                <SidebarMenu className="flex flex-col gap-3">
+                  {mainItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      {item.title === "New project" ? (
+                        <Dialog open={isNewProjectModalOpen} onOpenChange={setIsNewProjectModalOpen}>
+                          <DialogTrigger asChild>
+                            <SidebarMenuButton 
+                              size="sm" 
+                              className="px-2 py-4 h-8 cursor-pointer hover:py-4 hover:bg-gray-200 transition-all duration-200"
+                            >
+                              <item.icon className="w-5 h-5" />
+                              <span className={`transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '14px' }}>{item.title}</span>
+                            </SidebarMenuButton>
+                          </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px] flex flex-col gap-6 p-6" suppressHydrationWarning>
                         <div className="flex flex-col gap-2">
                           <DialogTitle>Create New Project</DialogTitle>
@@ -497,43 +497,43 @@ const AppSidebar = () => {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-muted-foreground px-2 py-2" style={{ fontSize: '14px' }}>Projects</SidebarGroupLabel>
-          <SidebarGroupContent className="pt-2">
-            <SidebarMenu className="flex flex-col gap-3">
-              {projects.map((project) => (
-                <SidebarMenuItem key={project.id}>
-                  <div className="group relative px-2 py-4 h-8 hover:bg-gray-200 transition-all duration-200 flex items-center justify-between cursor-pointer">
-                    <Link href="#" className="flex-1">
-                      <span className={`transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '14px' }}>{project.name}</span>
-                    </Link>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer ${state === "expanded" ? "" : "hidden"}`}>
-                          <HiDotsHorizontal className="w-4 h-4 text-gray-600" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" side="bottom" sideOffset={5}>
-                        <DropdownMenuItem onClick={() => handleRenameProject(project.id, project.name)}>
-                          <FaEdit className="w-5 h-5 mr-2" />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteProject(project.id, project.name)}
-                          className="text-red-600 hover:text-red-600 focus:text-red-600"
-                        >
-                          <MdDeleteOutline className="w-5 h-5 mr-2 text-red-600" />
-                          <span className="text-red-600">Delete</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+            </SidebarGroup>
+            <SidebarGroup className="px-2">
+              <SidebarGroupLabel className="text-muted-foreground px-2 py-2" style={{ fontSize: '14px' }}>Projects</SidebarGroupLabel>
+              <SidebarGroupContent className="pt-2">
+                <SidebarMenu className="flex flex-col gap-3">
+                  {projects.map((project) => (
+                    <SidebarMenuItem key={project.id}>
+                      <div className="group relative px-2 py-4 h-8 hover:bg-gray-200 transition-all duration-200 flex items-center justify-between cursor-pointer">
+                        <Link href="#" className="flex-1">
+                          <span className={`transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '14px' }}>{project.name}</span>
+                        </Link>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer ${state === "expanded" ? "" : "hidden"}`}>
+                              <HiDotsHorizontal className="w-4 h-4 text-gray-600" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" side="bottom" sideOffset={5}>
+                            <DropdownMenuItem onClick={() => handleRenameProject(project.id, project.name)}>
+                              <FaEdit className="w-5 h-5 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteProject(project.id, project.name)}
+                              className="text-red-600 hover:text-red-600 focus:text-red-600"
+                            >
+                              <MdDeleteOutline className="w-5 h-5 mr-2 text-red-600" />
+                              <span className="text-red-600">Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </div>
           
           {/* Scrollable Chats section */}
