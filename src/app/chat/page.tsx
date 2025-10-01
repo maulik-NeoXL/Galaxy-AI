@@ -1243,7 +1243,7 @@ const ChatPage = () => {
       {selectedText && (
         <div
           data-ask-chatgpt-button
-          className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="fixed z-50 bg-white border border-gray-300 rounded-xl shadow-xl px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
           style={{
             left: `${selectedText.position.x}px`,
             top: `${selectedText.position.y}px`,
