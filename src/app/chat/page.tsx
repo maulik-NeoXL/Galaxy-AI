@@ -7,6 +7,7 @@ import { RiVoiceprintFill } from "react-icons/ri";
 import { BsArrowUpCircleFill } from "react-icons/bs";
 import { SiOpenai, SiX } from "react-icons/si";
 import { RiGeminiFill } from "react-icons/ri";
+import { FaQuoteRight } from "react-icons/fa";
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser, useAuth } from '@clerk/nextjs';
@@ -1255,9 +1256,7 @@ const ChatPage = () => {
             handleAskChatGPT();
           }}
         >
-          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+          <FaQuoteRight className="w-4 h-4 text-gray-600" />
           <span className="text-sm font-medium text-gray-700">Ask ChatGPT</span>
         </div>
       )}
