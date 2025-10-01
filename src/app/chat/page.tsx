@@ -1243,7 +1243,7 @@ const ChatPage = () => {
       {selectedText && (
         <div
           data-ask-chatgpt-button
-          className="fixed z-50 bg-white border border-gray-300 rounded-xl shadow-xl px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="fixed z-50 bg-gray-100 border border-gray-300 rounded-xl shadow-xl px-3 py-2 flex items-center gap-2"
           style={{
             left: `${selectedText.position.x}px`,
             top: `${selectedText.position.y}px`,
@@ -1251,13 +1251,18 @@ const ChatPage = () => {
             maxWidth: '200px',
             whiteSpace: 'nowrap'
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAskChatGPT();
-          }}
         >
           <FaQuoteRight className="w-3 h-3 text-gray-600" />
-          <span className="font-medium text-gray-700" style={{ fontSize: '14px' }}>Ask ChatGPT</span>
+          <span className="font-medium text-gray-700" style={{ fontSize: '14px' }}>"{selectedText.text}"</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedText(null);
+            }}
+            className="ml-1 hover:bg-gray-200 rounded-full p-1 transition-colors"
+          >
+            <X className="w-3 h-3 text-gray-600" />
+          </button>
         </div>
       )}
     </div>
