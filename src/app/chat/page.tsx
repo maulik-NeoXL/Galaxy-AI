@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import CodeBlock from "@/components/CodeBlock";
 import { toast } from "sonner";
 import { fetchWithRetry, fetchSilent, getErrorMessage } from "@/lib/network-utils";
+import ImageWithProgress from "@/components/ImageWithProgress";
 
 const ChatPage = () => {
   const searchParams = useSearchParams();
@@ -759,10 +760,10 @@ const ChatPage = () => {
                                 .filter(file => file.type.startsWith('image/'))
                                 .map((file, index) => (
                                   <div key={index} className="w-48 h-48 rounded-lg overflow-hidden">
-                                    <img
+                                    <ImageWithProgress
                                       src={file.url}
                                       alt={file.name}
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-full"
                                     />
                                   </div>
                                 ))}
@@ -966,10 +967,10 @@ const ChatPage = () => {
                       <div key={index} className="relative flex-shrink-0">
                         {file.type.startsWith('image/') ? (
                           <div className="relative w-16 h-16 rounded-lg overflow-hidden">
-                            <img
+                            <ImageWithProgress
                               src={file.url}
                               alt={file.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full"
                             />
                             <button
                               onClick={() => removeFile(index)}
