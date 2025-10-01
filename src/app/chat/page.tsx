@@ -78,21 +78,27 @@ const ChatPage = () => {
 
   // Handle text selection and Ask ChatGPT button
   const handleTextSelection = (messageId: string, event: React.MouseEvent) => {
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
-      const selectedText = selection.toString().trim();
-      if (selectedText.length > 0) {
-        const rect = selection.getRangeAt(0).getBoundingClientRect();
-        setSelectedText({
-          text: selectedText,
-          messageId: messageId,
-          position: {
-            x: rect.left + rect.width / 2,
-            y: rect.top - 10
-          }
-        });
+    // Small delay to ensure selection is complete
+    setTimeout(() => {
+      const selection = window.getSelection();
+      console.log('Selection:', selection?.toString());
+      if (selection && selection.toString().trim()) {
+        const selectedText = selection.toString().trim();
+        console.log('Selected text:', selectedText);
+        if (selectedText.length > 0) {
+          const rect = selection.getRangeAt(0).getBoundingClientRect();
+          console.log('Selection rect:', rect);
+          setSelectedText({
+            text: selectedText,
+            messageId: messageId,
+            position: {
+              x: rect.left + rect.width / 2,
+              y: rect.top - 10
+            }
+          });
+        }
       }
-    }
+    }, 10);
   };
 
   const handleAskChatGPT = () => {
@@ -111,7 +117,12 @@ const ChatPage = () => {
 
   // Close selection on outside click
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Don't close if clicking on the Ask ChatGPT button
+      const target = event.target as HTMLElement;
+      if (target && target.closest('[data-ask-chatgpt-button]')) {
+        return;
+      }
       setSelectedText(null);
     };
     
@@ -1230,13 +1241,17 @@ const ChatPage = () => {
       {/* Ask ChatGPT Button */}
       {selectedText && (
         <div
+          data-ask-chatgpt-button
           className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
           style={{
             left: `${selectedText.position.x}px`,
             top: `${selectedText.position.y}px`,
             transform: 'translateX(-50%)'
           }}
-          onClick={handleAskChatGPT}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAskChatGPT();
+          }}
         >
           <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
