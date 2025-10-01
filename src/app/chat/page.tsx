@@ -1239,33 +1239,45 @@ const ChatPage = () => {
       </div>
       </div>
       
-      {/* Ask ChatGPT Button */}
+      {/* Ask ChatGPT Suggestion */}
       {selectedText && (
         <div
           data-ask-chatgpt-button
-          className="fixed z-50 bg-white border border-gray-300 rounded-xl shadow-xl px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="fixed z-50 bg-white border border-gray-300 rounded-xl shadow-xl p-2"
           style={{
             left: `${selectedText.position.x}px`,
             top: `${selectedText.position.y}px`,
             transform: 'translateX(-50%)',
-            maxWidth: '200px',
-            whiteSpace: 'nowrap'
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setInput(`Ask ChatGPT: "${selectedText.text}"`);
-            setSelectedText(null);
-            // Focus on input after setting the text
-            setTimeout(() => {
-              const inputElement = document.querySelector('textarea[placeholder*="Type your message"]') as HTMLTextAreaElement;
-              if (inputElement) {
-                inputElement.focus();
-              }
-            }, 100);
+            maxWidth: '300px',
+            minWidth: '200px'
           }}
         >
-          <FaQuoteRight className="w-3 h-3 text-gray-600" />
-          <span className="font-medium text-gray-700" style={{ fontSize: '14px' }}>Ask ChatGPT</span>
+          {/* Suggestion Row */}
+          <div className="bg-gray-100 rounded-lg px-3 py-2 flex items-center gap-2 mb-2">
+            <FaQuoteRight className="w-3 h-3 text-gray-600" />
+            <span className="font-medium text-gray-700 flex-1" style={{ fontSize: '14px' }}>{selectedText.text}</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedText(null);
+              }}
+              className="hover:bg-gray-200 rounded-full p-1 transition-colors"
+            >
+              <X className="w-3 h-3 text-gray-600" />
+            </button>
+          </div>
+          
+          {/* Input Field */}
+          <div className="bg-white rounded-lg px-3 py-2 flex items-center gap-2">
+            <Plus className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-400 flex-1" style={{ fontSize: '14px' }}>Ask anything</span>
+            <div className="flex items-center gap-1">
+              <CiMicrophoneOn className="w-4 h-4 text-gray-400" />
+              <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center">
+                <RiVoiceprintFill className="w-2 h-2 text-gray-500" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
