@@ -93,7 +93,7 @@ const ChatPage = () => {
             messageId: messageId,
             position: {
               x: rect.left + rect.width / 2,
-              y: rect.top - 10
+              y: rect.top - 50 // Position higher above the selection
             }
           });
         }
@@ -1246,7 +1246,9 @@ const ChatPage = () => {
           style={{
             left: `${selectedText.position.x}px`,
             top: `${selectedText.position.y}px`,
-            transform: 'translateX(-50%)'
+            transform: 'translateX(-50%)',
+            maxWidth: '200px',
+            whiteSpace: 'nowrap'
           }}
           onClick={(e) => {
             e.stopPropagation();
