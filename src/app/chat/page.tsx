@@ -1257,7 +1257,7 @@ const ChatPage = () => {
           }}
         >
           <FaQuoteRight className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Ask ChatGPT</span>
+          <span className="font-medium text-gray-700" style={{ fontSize: '14px' }}>Ask ChatGPT</span>
         </div>
       )}
     </div>
