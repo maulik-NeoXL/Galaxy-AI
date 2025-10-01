@@ -53,6 +53,7 @@ const ChatPage = () => {
   const [displayedTitle, setDisplayedTitle] = useState<string>('GPT-3.5 Turbo');
   const [isTypingTitle, setIsTypingTitle] = useState(false);
   const [titleGenerated, setTitleGenerated] = useState(false);
+  const [selectedText, setSelectedText] = useState<{text: string, messageId: string, position: {x: number, y: number}} | null>(null);
   // Removed userId as it's not needed for localStorage
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -74,6 +75,51 @@ const ChatPage = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Handle text selection and Ask ChatGPT button
+  const handleTextSelection = (messageId: string, event: React.MouseEvent) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      const selectedText = selection.toString().trim();
+      if (selectedText.length > 0) {
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        setSelectedText({
+          text: selectedText,
+          messageId: messageId,
+          position: {
+            x: rect.left + rect.width / 2,
+            y: rect.top - 10
+          }
+        });
+      }
+    }
+  };
+
+  const handleAskChatGPT = () => {
+    if (selectedText) {
+      setInput(selectedText.text);
+      setSelectedText(null);
+      // Focus on input after setting the text
+      setTimeout(() => {
+        const inputElement = document.querySelector('textarea[placeholder*="Type your message"]') as HTMLTextAreaElement;
+        if (inputElement) {
+          inputElement.focus();
+        }
+      }, 100);
+    }
+  };
+
+  // Close selection on outside click
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setSelectedText(null);
+    };
+    
+    if (selectedText) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [selectedText]);
 
   // Typing effect for chat title
   const typeTitle = (title: string) => {
@@ -811,6 +857,8 @@ const ChatPage = () => {
                               ? 'text-black text-base leading-normal bg-gray-200'
                         : 'bg-white text-gray-900 text-base'
                     }`}
+                          onMouseUp={(e) => message.role === 'assistant' && handleTextSelection(message.id, e)}
+                          onTouchEnd={(e) => message.role === 'assistant' && handleTextSelection(message.id, e as any)}
                   >
                     {message.role === 'assistant' && message.content.includes('```') ? (
                       <div className="space-y-4 w-full max-w-full overflow-hidden block">
@@ -1178,6 +1226,24 @@ const ChatPage = () => {
           </form>
       </div>
       </div>
+      
+      {/* Ask ChatGPT Button */}
+      {selectedText && (
+        <div
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          style={{
+            left: `${selectedText.position.x}px`,
+            top: `${selectedText.position.y}px`,
+            transform: 'translateX(-50%)'
+          }}
+          onClick={handleAskChatGPT}
+        >
+          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <span className="text-sm font-medium text-gray-700">Ask ChatGPT</span>
+        </div>
+      )}
     </div>
     </TooltipProvider>
   );
