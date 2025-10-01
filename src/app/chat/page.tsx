@@ -9,6 +9,8 @@ import { SiOpenai, SiX } from "react-icons/si";
 import { RiGeminiFill } from "react-icons/ri";
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useUser, useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -19,6 +21,9 @@ import { fetchWithRetry, fetchSilent, getErrorMessage } from "@/lib/network-util
 
 const ChatPage = () => {
   const searchParams = useSearchParams();
+  const { user } = useUser();
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
   const [isMicMuted, setIsMicMuted] = useState(true);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string, files?: File[]}>>([]);
@@ -32,6 +37,8 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatId, setChatId] = useState<string>('');
   const [currentChatTitle, setCurrentChatTitle] = useState<string>('GPT-3.5 Turbo');
+  const [displayedTitle, setDisplayedTitle] = useState<string>('GPT-3.5 Turbo');
+  const [isTypingTitle, setIsTypingTitle] = useState(false);
   // Removed userId as it's not needed for localStorage
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -54,6 +61,27 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Typing effect for chat title
+  const typeTitle = (title: string) => {
+    console.log('Starting typing effect for title:', title);
+    setIsTypingTitle(true);
+    setDisplayedTitle(''); // Start with empty title
+    
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex < title.length) {
+        const partialTitle = title.slice(0, currentIndex + 1);
+        console.log('Typing character:', partialTitle);
+        setDisplayedTitle(partialTitle);
+        currentIndex++;
+      } else {
+        console.log('Typing effect completed');
+        clearInterval(typingInterval);
+        setIsTypingTitle(false);
+      }
+    }, 80); // 80ms delay between characters for faster typing
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
@@ -67,6 +95,13 @@ const ChatPage = () => {
       setChatId(`chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
     }
   }, []);
+
+  // Redirect to sign-up if not authenticated
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-up');
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   // Handle new chat from sidebar
   useEffect(() => {
@@ -100,6 +135,8 @@ const ChatPage = () => {
       setEditingMessageId(null);
       setEditContent('');
       setCurrentChatTitle(selectedModel);
+      setDisplayedTitle(selectedModel);
+      setIsTypingTitle(false); // Ensure typing is not active when clearing chat
       setSelectedFiles([]);
       setIsLoading(false);
     };
@@ -231,7 +268,7 @@ const ChatPage = () => {
         },
         body: JSON.stringify({
           chatId,
-          userId: 'user_123', // TODO: Get from Clerk auth
+          userId: user?.id || 'anonymous',
           title: chatTitle,
           messages: newMessages
         }),
@@ -243,9 +280,11 @@ const ChatPage = () => {
       
       console.log('Chat saved to MongoDB:', chatId, 'Title:', chatTitle);
       
-      // Update current chat title
+      // Update current chat title with typing effect
       console.log('Updating currentChatTitle from', currentChatTitle, 'to', chatTitle);
       setCurrentChatTitle(chatTitle);
+      // Start typing effect immediately - don't set displayedTitle first
+      typeTitle(chatTitle);
       
       // Dispatch custom event to notify sidebar
       if (typeof window !== 'undefined') {
@@ -274,6 +313,8 @@ const ChatPage = () => {
         // Set the chat title from loaded data
         if (chatData.title) {
           setCurrentChatTitle(chatData.title);
+          setDisplayedTitle(chatData.title);
+          setIsTypingTitle(false); // Ensure typing is not active for loaded chats
         }
       } else {
         // 404 response (new chat) - silently handle
@@ -356,7 +397,7 @@ const ChatPage = () => {
             role: msg.role,
             content: msg.content
           })),
-          userId: 'user_123', // TODO: Get from Clerk auth
+          userId: user?.id || 'anonymous',
           runId: chatId
         }),
       }, {
@@ -381,7 +422,7 @@ const ChatPage = () => {
         body: JSON.stringify({
           action: 'load',
           filters: {
-            user_id: 'user_123', // TODO: Get from Clerk auth
+            user_id: user?.id || 'anonymous',
             run_id: chatId
           }
         }),
@@ -408,6 +449,8 @@ const ChatPage = () => {
     setEditingMessageId(null);
     setEditContent('');
     setCurrentChatTitle(selectedModel);
+    setDisplayedTitle(selectedModel);
+    setIsTypingTitle(false); // Ensure typing is not active for new chats
     const newChatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setChatId(newChatId);
     setSelectedFiles([]);
@@ -534,21 +577,18 @@ const ChatPage = () => {
     }
   };
 
-  if (!isClient || !chatId) {
+  // Show loading while auth is loading or user is not authenticated
+  if (!isLoaded || !isSignedIn || !isClient || !chatId || !mounted) {
     return (
       <div className="flex flex-col h-screen bg-white">
         <div className="flex items-center justify-center h-full">
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="text-gray-500">
+              {!isLoaded ? 'Loading...' : !isSignedIn ? 'Redirecting to sign up...' : 'Loading chat...'}
+            </div>
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return (
-      <div className="flex flex-col h-screen bg-white items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -560,7 +600,10 @@ const ChatPage = () => {
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold text-gray-900">
-            {currentChatTitle}
+            {displayedTitle}
+            {isTypingTitle && (
+              <span className="animate-pulse text-gray-500">|</span>
+            )}
           </h1>
         </div>
                       {messages.length > 0 && (
@@ -1007,6 +1050,8 @@ const ChatPage = () => {
                                             if (currentChatTitle === selectedModel || currentChatTitle === 'New Chat') {
                                               console.log('Updating navbar title to:', model.name);
                                               setCurrentChatTitle(model.name);
+                                              setDisplayedTitle(model.name);
+                                              setIsTypingTitle(false); // Ensure typing is not active for model changes
                                             } else {
                                               console.log('Not updating navbar title - current title is:', currentChatTitle);
                                             }

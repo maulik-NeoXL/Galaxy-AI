@@ -47,7 +47,7 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { useClerk } from '@clerk/nextjs';
+import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchWithRetry, getErrorMessage } from "@/lib/network-utils";
@@ -86,11 +86,14 @@ interface ChatItem {
   title: string;
   timestamp: number;
   preview: string;
+  displayedTitle?: string;
+  isTypingTitle?: boolean;
 }
 
 const AppSidebar = () => {
   const { state } = useSidebar();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
@@ -106,6 +109,33 @@ const AppSidebar = () => {
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Typing effect for chat titles in sidebar
+  const typeChatTitle = (chatId: string, title: string) => {
+    console.log('Starting typing effect for sidebar chat title:', title);
+    
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex < title.length) {
+        const partialTitle = title.slice(0, currentIndex + 1);
+        console.log('Typing sidebar character:', partialTitle);
+        setChatItems(prev => prev.map(chat => 
+          chat.id === chatId 
+            ? { ...chat, displayedTitle: partialTitle, isTypingTitle: true }
+            : chat
+        ));
+        currentIndex++;
+      } else {
+        console.log('Sidebar typing effect completed');
+        clearInterval(typingInterval);
+        setChatItems(prev => prev.map(chat => 
+          chat.id === chatId 
+            ? { ...chat, isTypingTitle: false }
+            : chat
+        ));
+      }
+    }, 80); // 80ms delay between characters for faster typing
+  };
+
   const categories = [
     { name: 'Investing', icon: FaDollarSign, color: 'bg-green-500' },
     { name: 'Homework', icon: FaGraduationCap, color: 'bg-blue-500' },
@@ -118,16 +148,18 @@ const AppSidebar = () => {
     if (!isClient) return;
     
     try {
-      const response = await fetchWithRetry('/api/chats?userId=user_123', {}, {
+      const response = await fetchWithRetry(`/api/chats?userId=${user?.id || 'anonymous'}`, {}, {
         maxRetries: 2,
         baseDelay: 1000,
         maxDelay: 3000
-      }); // TODO: Get from Clerk auth
+      });
       
       const chats = await response.json();
       const chatItems: ChatItem[] = chats.map((chat: { chatId: string; title: string; updatedAt: string; messages: { content: string }[] }) => ({
         id: chat.chatId,
         title: chat.title || 'New chat',
+        displayedTitle: chat.title || 'New chat',
+        isTypingTitle: false,
         timestamp: new Date(chat.updatedAt).getTime(),
         preview: chat.messages && chat.messages.length > 0 
           ? chat.messages[chat.messages.length - 1].content.substring(0, 50) + (chat.messages[chat.messages.length - 1].content.length > 50 ? '...' : '')
@@ -138,7 +170,7 @@ const AppSidebar = () => {
       console.error('Error loading chat items:', error);
       toast.error(getErrorMessage(error));
     }
-  }, [isClient]);
+  }, [isClient, user?.id]);
 
   // Set client state and load chats on mount
   useEffect(() => {
@@ -150,13 +182,45 @@ const AppSidebar = () => {
   useEffect(() => {
     if (isClient) {
       // Listen for custom chatSaved event to update chat list when new chats are created
-      const handleChatSaved = () => {
-        loadChatItems();
+      const handleChatSaved = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const { chatId, title } = customEvent.detail;
+        console.log('Chat saved event received:', { chatId, title });
+        
+        // Check if chat already exists to prevent duplicates
+        setChatItems(prev => {
+          const existingChat = prev.find(chat => chat.id === chatId);
+          if (existingChat) {
+            // Update existing chat title with typing effect
+            typeChatTitle(chatId, title);
+            return prev.map(chat => 
+              chat.id === chatId 
+                ? { ...chat, title: title, displayedTitle: '', isTypingTitle: true }
+                : chat
+            );
+          } else {
+            // Add new chat to the list with typing effect
+            const newChatItem: ChatItem = {
+              id: chatId,
+              title: title,
+              displayedTitle: '', // Start with empty title
+              isTypingTitle: true, // Start typing immediately
+              timestamp: Date.now(),
+              preview: ''
+            };
+            
+            // Start typing effect for the new chat title immediately
+            typeChatTitle(chatId, title);
+            
+            return [newChatItem, ...prev];
+          }
+        });
       };
       
       // Listen for custom chatDeleted event to update chat list when chats are deleted
-      const handleChatDeleted = (event: CustomEvent) => {
-        const { chatId } = event.detail;
+      const handleChatDeleted = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const { chatId } = customEvent.detail;
         // Remove the chat from local state immediately
         setChatItems(prev => prev.filter(chat => chat.id !== chatId));
         // Also reload from server to ensure consistency
@@ -165,11 +229,11 @@ const AppSidebar = () => {
       
       if (typeof window !== 'undefined') {
         window.addEventListener('chatSaved', handleChatSaved);
-        window.addEventListener('chatDeleted', handleChatDeleted as EventListener);
+        window.addEventListener('chatDeleted', handleChatDeleted);
         
         return () => {
           window.removeEventListener('chatSaved', handleChatSaved);
-          window.removeEventListener('chatDeleted', handleChatDeleted as EventListener);
+          window.removeEventListener('chatDeleted', handleChatDeleted);
         };
       }
     }
@@ -306,6 +370,10 @@ const AppSidebar = () => {
   if (!mounted) {
     return (
       <div className="w-64 bg-white border-r border-gray-200 p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-5 h-5 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
         <div className="animate-pulse space-y-2">
           <div className="h-4 bg-gray-200 rounded"></div>
           <div className="h-4 bg-gray-200 rounded"></div> 
@@ -485,7 +553,10 @@ const AppSidebar = () => {
                         <div className={`text-base font-medium transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"} ${
                           isActive && state === "expanded" ? 'text-gray-900' : ''
                         }`} style={isActive && state === "expanded" ? { color: '#111827', fontSize: '16px' } : { fontSize: '16px' }}>
-                          {chat.title}
+                          {chat.isTypingTitle ? chat.displayedTitle : chat.title}
+                          {chat.isTypingTitle && (
+                            <span className="animate-pulse text-gray-500">|</span>
+                          )}
                         </div>
                       </div>
                     <DropdownMenu>
