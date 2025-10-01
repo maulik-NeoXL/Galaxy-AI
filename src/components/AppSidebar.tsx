@@ -384,8 +384,8 @@ const AppSidebar = () => {
   }
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="py-2">
+    <Sidebar collapsible="icon" className="flex flex-col h-full">
+      <SidebarHeader className="py-2 flex-shrink-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-2 py-2 w-full group">
@@ -410,7 +410,10 @@ const AppSidebar = () => {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="flex-1 overflow-hidden">
+        <div className="h-full flex flex-col">
+          {/* Fixed sections - New Chat, Projects */}
+          <div className="flex-shrink-0">
         <SidebarGroup className="px-2">
           <SidebarGroupContent>
             <SidebarMenu className="flex flex-col gap-3">
@@ -531,57 +534,63 @@ const AppSidebar = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-muted-foreground px-2 py-2" style={{ fontSize: '14px' }}>Chats</SidebarGroupLabel>
-          <SidebarGroupContent className="pt-2">
-            <SidebarMenu className="flex flex-col gap-0">
-              {chatItems.map((chat) => {
-                const currentChatId = searchParams.get('chatId');
-                const isActive = currentChatId === chat.id;
-                
-                return (
-                  <SidebarMenuItem key={chat.id}>
-                    <div className={`group/chat-item relative px-2 transition-all duration-200 flex items-center justify-between cursor-pointer rounded-md ${
-                      isActive && state === "expanded"
-                        ? 'bg-gray-200' 
-                        : 'hover:bg-gray-200'
-                    }`} style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                      <div 
-                        className="flex-1 cursor-pointer" 
-                        onClick={() => handleChatClick(chat.id)}
-                      >
-                        <div className={`font-medium transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"} ${
-                          isActive && state === "expanded" ? 'text-gray-900' : ''
-                        }`} style={isActive && state === "expanded" ? { color: '#111827', fontSize: '14px' } : { fontSize: '14px' }}>
-                          {chat.isTypingTitle ? chat.displayedTitle : chat.title}
-                          {chat.isTypingTitle && (
-                            <span className="animate-pulse text-gray-500">|</span>
-                          )}
+          </div>
+          
+          {/* Scrollable Chats section */}
+          <div className="flex-1 overflow-hidden">
+            <SidebarGroup className="px-2 h-full flex flex-col">
+              <SidebarGroupLabel className="text-muted-foreground px-2 py-2 flex-shrink-0" style={{ fontSize: '14px' }}>Chats</SidebarGroupLabel>
+              <SidebarGroupContent className="pt-2 flex-1 overflow-y-auto">
+                <SidebarMenu className="flex flex-col gap-0">
+                  {chatItems.map((chat) => {
+                    const currentChatId = searchParams.get('chatId');
+                    const isActive = currentChatId === chat.id;
+                    
+                    return (
+                      <SidebarMenuItem key={chat.id}>
+                        <div className={`group/chat-item relative px-2 transition-all duration-200 flex items-center justify-between cursor-pointer rounded-md ${
+                          isActive && state === "expanded"
+                            ? 'bg-gray-200' 
+                            : 'hover:bg-gray-200'
+                        }`} style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                          <div 
+                            className="flex-1 cursor-pointer" 
+                            onClick={() => handleChatClick(chat.id)}
+                          >
+                            <div className={`font-medium transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"} ${
+                              isActive && state === "expanded" ? 'text-gray-900' : ''
+                            }`} style={isActive && state === "expanded" ? { color: '#111827', fontSize: '14px' } : { fontSize: '14px' }}>
+                              {chat.isTypingTitle ? chat.displayedTitle : chat.title}
+                              {chat.isTypingTitle && (
+                                <span className="animate-pulse text-gray-500">|</span>
+                              )}
+                            </div>
+                          </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className={`opacity-0 group-hover/chat-item:opacity-100 transition-opacity p-1 cursor-pointer ${state === "expanded" ? "" : "hidden"}`}>
+                              <HiDotsHorizontal className="w-4 h-4 text-gray-600" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" side="bottom" sideOffset={5}>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteChat(chat.id)}
+                              className="text-red-600 hover:text-red-600 focus:text-red-600"
+                            >
+                              <MdDeleteOutline className="w-5 h-5 mr-2 text-red-600" />
+                              <span className="text-red-600">Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         </div>
-                      </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className={`opacity-0 group-hover/chat-item:opacity-100 transition-opacity p-1 cursor-pointer ${state === "expanded" ? "" : "hidden"}`}>
-                          <HiDotsHorizontal className="w-4 h-4 text-gray-600" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" side="bottom" sideOffset={5}>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteChat(chat.id)}
-                          className="text-red-600 hover:text-red-600 focus:text-red-600"
-                        >
-                          <MdDeleteOutline className="w-5 h-5 mr-2 text-red-600" />
-                          <span className="text-red-600">Delete</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    </div>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </div>
+        </div>
       </SidebarContent>
       
       {/* Rename Project Modal */}
@@ -642,7 +651,7 @@ const AppSidebar = () => {
         </DialogContent>
       </Dialog>
       
-      <SidebarFooter>
+      <SidebarFooter className="flex-shrink-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
