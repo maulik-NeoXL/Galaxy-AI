@@ -14,7 +14,8 @@ if (!MONGODB_URI) {
 declare global {
   var mongoose: {
     conn: typeof mongoose | null;
-    promise: Promise<typeof mongoose> | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    promise: any;
   };
 }
 
@@ -25,6 +26,10 @@ if (!cached) {
 }
 
 async function connectDB() {
+  if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -34,9 +39,7 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
 
   try {
