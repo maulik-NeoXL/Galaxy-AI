@@ -53,6 +53,7 @@
     "chownr": "^3.0.0",
     "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",
+    "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
     "color": "^4.2.3",
     "color-convert": "^2.0.1",

@@ -424,7 +424,7 @@ const AppSidebar = () => {
                           className="px-2 py-4 h-8 cursor-pointer hover:py-4 hover:bg-gray-200 transition-all duration-200"
                         >
                           <item.icon className="w-5 h-5" />
-                          <span className={`text-base transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '16px' }}>{item.title}</span>
+                          <span className={`transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '14px' }}>{item.title}</span>
                         </SidebarMenuButton>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px] flex flex-col gap-6 p-6" suppressHydrationWarning>
@@ -461,7 +461,7 @@ const AppSidebar = () => {
                                   <div className={`w-5 h-5 rounded-full ${category.color} flex items-center justify-center text-white`}>
                                     <category.icon className="w-3 h-3" />
                                   </div>
-                                  <span className="text-base text-black" style={{ fontSize: '16px' }}>{category.name}</span>
+                                  <span className="text-black" style={{ fontSize: '14px' }}>{category.name}</span>
                                 </div>
                               ))}
                             </div>
@@ -487,7 +487,7 @@ const AppSidebar = () => {
                       onClick={item.title === "New chat" ? handleNewChat : undefined}
                     >
                       <item.icon className="w-5 h-5" />
-                      <span className="text-base" style={{ fontSize: '16px' }}>{item.title}</span>
+                      <span style={{ fontSize: '14px' }}>{item.title}</span>
                     </SidebarMenuButton>
                   )}
                 </SidebarMenuItem>
@@ -496,14 +496,14 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-base text-muted-foreground px-2 py-2" style={{ fontSize: '16px' }}>Projects</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground px-2 py-2" style={{ fontSize: '14px' }}>Projects</SidebarGroupLabel>
           <SidebarGroupContent className="pt-2">
             <SidebarMenu className="flex flex-col gap-3">
               {projects.map((project) => (
                 <SidebarMenuItem key={project.id}>
                   <div className="group relative px-2 py-4 h-8 hover:bg-gray-200 transition-all duration-200 flex items-center justify-between cursor-pointer">
                     <Link href="#" className="flex-1">
-                      <span className={`text-base transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '16px' }}>{project.name}</span>
+                      <span className={`transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontSize: '14px' }}>{project.name}</span>
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -532,27 +532,27 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-base text-muted-foreground px-2 py-2" style={{ fontSize: '16px' }}>Chats</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground px-2 py-2" style={{ fontSize: '14px' }}>Chats</SidebarGroupLabel>
           <SidebarGroupContent className="pt-2">
-            <SidebarMenu className="flex flex-col gap-3">
+            <SidebarMenu className="flex flex-col gap-0">
               {chatItems.map((chat) => {
                 const currentChatId = searchParams.get('chatId');
                 const isActive = currentChatId === chat.id;
                 
                 return (
                   <SidebarMenuItem key={chat.id}>
-                    <div className={`group relative px-2 py-5 h-8 transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                    <div className={`group/chat-item relative px-2 transition-all duration-200 flex items-center justify-between cursor-pointer rounded-md ${
                       isActive && state === "expanded"
-                        ? 'bg-gray-200 rounded-md' 
+                        ? 'bg-gray-200' 
                         : 'hover:bg-gray-200'
-                    }`} style={isActive && state === "expanded" ? { backgroundColor: '#e5e7eb', borderRadius: '6px' } : {}}>
+                    }`} style={{ paddingTop: '6px', paddingBottom: '6px' }}>
                       <div 
                         className="flex-1 cursor-pointer" 
                         onClick={() => handleChatClick(chat.id)}
                       >
-                        <div className={`text-base font-medium transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"} ${
+                        <div className={`font-medium transition-all duration-200 ${state === "expanded" ? "opacity-100" : "opacity-0 w-0 overflow-hidden"} ${
                           isActive && state === "expanded" ? 'text-gray-900' : ''
-                        }`} style={isActive && state === "expanded" ? { color: '#111827', fontSize: '16px' } : { fontSize: '16px' }}>
+                        }`} style={isActive && state === "expanded" ? { color: '#111827', fontSize: '14px' } : { fontSize: '14px' }}>
                           {chat.isTypingTitle ? chat.displayedTitle : chat.title}
                           {chat.isTypingTitle && (
                             <span className="animate-pulse text-gray-500">|</span>
@@ -561,7 +561,7 @@ const AppSidebar = () => {
                       </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer ${state === "expanded" ? "" : "hidden"}`}>
+                        <button className={`opacity-0 group-hover/chat-item:opacity-100 transition-opacity p-1 cursor-pointer ${state === "expanded" ? "" : "hidden"}`}>
                           <HiDotsHorizontal className="w-4 h-4 text-gray-600" />
                         </button>
                       </DropdownMenuTrigger>
@@ -655,7 +655,7 @@ const AppSidebar = () => {
                     M
                   </div>
                   <div className={`transition-all duration-200 flex items-center ${state === "expanded" ? "opacity-100 ml-2" : "opacity-0 ml-0 w-0 overflow-hidden"}`}>
-                    <span className="text-base" style={{ fontSize: '16px' }}>Maulik Tanna</span>
+                    <span style={{ fontSize: '14px' }}>Maulik Tanna</span>
                   </div>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>

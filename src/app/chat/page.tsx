@@ -26,11 +26,23 @@ const ChatPage = () => {
   const router = useRouter();
   const [isMicMuted, setIsMicMuted] = useState(true);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string, files?: File[]}>>([]);
+  const [messages, setMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string, files?: Array<{
+    name: string;
+    type: string;
+    size: number;
+    url: string;
+    publicId: string;
+  }>}>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<Array<{
+    name: string;
+    type: string;
+    size: number;
+    url: string;
+    publicId: string;
+  }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedModel, setSelectedModel] = useState('GPT-3.5 Turbo');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -39,6 +51,7 @@ const ChatPage = () => {
   const [currentChatTitle, setCurrentChatTitle] = useState<string>('GPT-3.5 Turbo');
   const [displayedTitle, setDisplayedTitle] = useState<string>('GPT-3.5 Turbo');
   const [isTypingTitle, setIsTypingTitle] = useState(false);
+  const [titleGenerated, setTitleGenerated] = useState(false);
   // Removed userId as it's not needed for localStorage
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -184,9 +197,38 @@ const ChatPage = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setSelectedFiles(prev => [...prev, ...files]);
+    
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          setSelectedFiles(prev => [...prev, result.data]);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+    
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const removeFile = (index: number) => {
@@ -238,26 +280,40 @@ const ChatPage = () => {
     return title || 'New chat';
   };
 
-  const saveChatToMongoDB = async (newMessages: typeof messages) => {
+  const saveChatToMongoDB = async (newMessages: typeof messages, forceTitleGeneration = false) => {
     if (!isClient) return;
     
     try {
       // Generate title from first meaningful user message
       const userMessages = newMessages.filter(msg => msg.role === 'user');
-      let chatTitle = 'New chat';
+      let chatTitle = currentChatTitle; // Use existing title by default
       
       console.log('saveChatToMongoDB - newMessages:', newMessages);
       console.log('saveChatToMongoDB - userMessages:', userMessages);
       console.log('saveChatToMongoDB - userMessages.length:', userMessages.length);
+      console.log('saveChatToMongoDB - titleGenerated:', titleGenerated);
+      console.log('saveChatToMongoDB - forceTitleGeneration:', forceTitleGeneration);
       
-      if (userMessages.length > 0) {
-        const firstUserMessage = userMessages[0];
-        console.log('First user message:', firstUserMessage);
-        chatTitle = generateChatTitle(firstUserMessage.content);
-        console.log('Generating title from:', firstUserMessage.content, '→', chatTitle);
+      // Generate title if:
+      // 1. Force generation is requested, OR
+      // 2. Current title is "New chat" and we have user messages
+      const shouldGenerateTitle = forceTitleGeneration || 
+                                 (currentChatTitle === 'New chat' && userMessages.length > 0);
+      
+      if (shouldGenerateTitle && userMessages.length > 0) {
+        // Find the most meaningful user message for title generation
+        const meaningfulMessage = userMessages.find(msg => {
+          const generatedTitle = generateChatTitle(msg.content);
+          return generatedTitle !== 'New chat';
+        }) || userMessages[0]; // Fallback to first message if none are meaningful
+        
+        console.log('Using message for title:', meaningfulMessage);
+        chatTitle = generateChatTitle(meaningfulMessage.content);
+        console.log('Generating title from:', meaningfulMessage.content, '→', chatTitle);
         console.log('Setting currentChatTitle to:', chatTitle);
+        setTitleGenerated(true);
       } else {
-        console.log('No user messages found, keeping default title');
+        console.log('Using existing title:', chatTitle);
       }
       
       // Save to MongoDB with retry logic
@@ -280,15 +336,19 @@ const ChatPage = () => {
       
       console.log('Chat saved to MongoDB:', chatId, 'Title:', chatTitle);
       
-      // Update current chat title with typing effect
-      console.log('Updating currentChatTitle from', currentChatTitle, 'to', chatTitle);
-      setCurrentChatTitle(chatTitle);
-      // Start typing effect immediately - don't set displayedTitle first
-      typeTitle(chatTitle);
-      
-      // Dispatch custom event to notify sidebar
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('chatSaved', { detail: { chatId, title: chatTitle } }));
+      // Update current chat title with typing effect only if title changed
+      if (chatTitle !== currentChatTitle) {
+        console.log('Updating currentChatTitle from', currentChatTitle, 'to', chatTitle);
+        setCurrentChatTitle(chatTitle);
+        // Start typing effect immediately - don't set displayedTitle first
+        typeTitle(chatTitle);
+        
+        // Dispatch custom event to notify sidebar
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('chatSaved', { detail: { chatId, title: chatTitle } }));
+        }
+      } else {
+        console.log('Title unchanged, not updating UI');
       }
     } catch (error) {
       console.error('Failed to save chat to MongoDB:', error);
@@ -315,6 +375,7 @@ const ChatPage = () => {
           setCurrentChatTitle(chatData.title);
           setDisplayedTitle(chatData.title);
           setIsTypingTitle(false); // Ensure typing is not active for loaded chats
+          setTitleGenerated(true); // Mark title as already generated for loaded chats
         }
       } else {
         // 404 response (new chat) - silently handle
@@ -451,6 +512,7 @@ const ChatPage = () => {
     setCurrentChatTitle(selectedModel);
     setDisplayedTitle(selectedModel);
     setIsTypingTitle(false); // Ensure typing is not active for new chats
+    setTitleGenerated(false); // Reset title generation flag
     const newChatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setChatId(newChatId);
     setSelectedFiles([]);
@@ -507,7 +569,7 @@ const ChatPage = () => {
       console.log('User message being added:', userMessage);
       const initialMessages = [...messages, userMessage];
       console.log('Initial messages array:', initialMessages);
-      saveChatToMongoDB(initialMessages);
+      saveChatToMongoDB(initialMessages, true); // Force title generation on first message
     }
 
     try {
@@ -563,7 +625,8 @@ const ChatPage = () => {
       // Save completed conversation to MongoDB (update existing chat)
       if (isClient) {
         const finalMessages = [...messages, userMessage, assistantMessage];
-        saveChatToMongoDB(finalMessages);
+        // Only update messages, don't regenerate title
+        saveChatToMongoDB(finalMessages, false);
         
         // Save to Mem0 for AI memory
         saveToMem0([userMessage, assistantMessage]);
@@ -695,7 +758,7 @@ const ChatPage = () => {
                                 .map((file, index) => (
                                   <div key={index} className="w-48 h-48 rounded-lg overflow-hidden">
                                     <img
-                                      src={URL.createObjectURL(file)}
+                                      src={file.url}
                                       alt={file.name}
                                       className="w-full h-full object-cover"
                                     />
@@ -902,7 +965,7 @@ const ChatPage = () => {
                         {file.type.startsWith('image/') ? (
                           <div className="relative w-16 h-16 rounded-lg overflow-hidden">
                             <img
-                              src={URL.createObjectURL(file)}
+                              src={file.url}
                               alt={file.name}
                               className="w-full h-full object-cover"
                             />
