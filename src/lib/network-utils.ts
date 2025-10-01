@@ -44,8 +44,8 @@ export function isRetryableError(error: unknown): boolean {
     'TypeError', // Often network-related in fetch
   ];
 
-  const errorMessage = error?.message || '';
-  const errorName = error?.name || '';
+  const errorMessage = (error as Error)?.message || '';
+  const errorName = (error as Error)?.name || '';
   
   return retryableErrors.some(retryableError => 
     errorMessage.includes(retryableError) || 
@@ -102,7 +102,7 @@ export async function withRetry<T>(
 
       const delay = calculateDelay(attempt, baseDelay, maxDelay, backoffFactor);
       // Only log retry attempts for non-404 errors to reduce console noise
-      if (error.status !== 404) {
+      if ((error as any)?.status !== 404) {
         console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`, error);
       }
       await sleep(delay);
@@ -110,9 +110,9 @@ export async function withRetry<T>(
   }
 
   throw new NetworkError(
-    `Failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`,
+    `Failed after ${maxRetries} attempts: ${(lastError as Error)?.message || 'Unknown error'}`,
     undefined,
-    lastError?.code,
+    (lastError as any)?.code,
     false
   );
 }
@@ -195,7 +195,7 @@ export function getErrorMessage(error: unknown): string {
     }
   }
 
-  const message = error?.message || 'An unexpected error occurred';
+  const message = (error as Error)?.message || 'An unexpected error occurred';
   
   if (message.includes('ERR_NETWORK_CHANGED')) {
     return 'Network connection changed. Please check your internet connection and try again.';
