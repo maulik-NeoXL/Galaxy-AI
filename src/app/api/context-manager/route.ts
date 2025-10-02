@@ -123,5 +123,5 @@ function getModelLimit(model: string): number {
     'Grok-2': 131072
   };
   
-  return MODEL_LIMITS[model] || MODEL_LIMITS['GPT-3.5 Turbo'];
+  return MODEL_LIMITS[model as keyof typeof MODEL_LIMITS] || MODEL_LIMITS['GPT-3.5 Turbo'];
 }
