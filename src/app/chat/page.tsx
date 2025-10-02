@@ -50,8 +50,8 @@ const ChatPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatId, setChatId] = useState<string>('');
-  const [currentChatTitle, setCurrentChatTitle] = useState<string>('GPT-3.5 Turbo');
-  const [displayedTitle, setDisplayedTitle] = useState<string>('GPT-3.5 Turbo');
+  const [currentChatTitle, setCurrentChatTitle] = useState<string>('New chat');
+  const [displayedTitle, setDisplayedTitle] = useState<string>('New chat');
   const [isTypingTitle, setIsTypingTitle] = useState(false);
   const [titleGenerated, setTitleGenerated] = useState(false);
   const [selectedText, setSelectedText] = useState<{text: string, messageId: string, position: {x: number, y: number}} | null>(null);
@@ -380,8 +380,8 @@ const ChatPage = () => {
       setInput('');
       setEditingMessageId(null);
       setEditContent('');
-      setCurrentChatTitle(selectedModel);
-      setDisplayedTitle(selectedModel);
+      setCurrentChatTitle('New chat');
+      setDisplayedTitle('New chat');
       setIsTypingTitle(false); // Ensure typing is not active when clearing chat
       setSelectedFiles([]);
       setIsLoading(false);
@@ -921,8 +921,8 @@ const ChatPage = () => {
     setInput('');
     setEditingMessageId(null);
     setEditContent('');
-    setCurrentChatTitle(selectedModel);
-    setDisplayedTitle(selectedModel);
+    setCurrentChatTitle('New chat');
+    setDisplayedTitle('New chat');
     setIsTypingTitle(false); // Ensure typing is not active for new chats
     setTitleGenerated(false); // Reset title generation flag
     const newChatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -1598,14 +1598,14 @@ const ChatPage = () => {
                                             console.log('Current chat title:', currentChatTitle);
                                             console.log('Current selected model:', selectedModel);
                                             setSelectedModel(model.name);
-                                            // Update navbar title if it's currently showing a model name
-                                            if (currentChatTitle === selectedModel || currentChatTitle === 'New Chat') {
-                                              console.log('Updating navbar title to:', model.name);
+                                            // Update navbar title only if it's a new chat (showing "New chat")
+                                            if (currentChatTitle === 'New chat') {
+                                              console.log('Updating navbar title to model name for new chat:', model.name);
                                               setCurrentChatTitle(model.name);
                                               setDisplayedTitle(model.name);
                                               setIsTypingTitle(false); // Ensure typing is not active for model changes
                                             } else {
-                                              console.log('Not updating navbar title - current title is:', currentChatTitle);
+                                              console.log('Not updating navbar title - existing chat title:', currentChatTitle);
                                             }
                                           }}
                                           className={`flex items-center justify-between ${model.name === 'GPT-3.5 Turbo' ? 'py-3' : 'py-2'} ${selectedModel === model.name ? 'border border-blue-500 bg-blue-50' : ''}`}
