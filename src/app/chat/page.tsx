@@ -443,15 +443,64 @@ const ChatPage = () => {
       // Process files and convert to base64 for persistence
       const processedFiles = await Promise.all(files.map(async (file) => {
         try {
+          // Check file size - limit to 5MB for images, 10MB for other files
+          const maxImageSize = 5 * 1024 * 1024; // 5MB
+          const maxFileSize = 10 * 1024 * 1024; // 10MB
+          
+          if (file.size > (file.type.startsWith('image/') ? maxImageSize : maxFileSize)) {
+            throw new Error(`File too large: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB). Max allowed: ${file.type.startsWith('image/') ? '5MB' : '10MB'}`);
+          }
+          
           let url: string;
           
-          // Convert images to base64 for persistence
+          // Convert images to base64 for persistence with compression
           if (file.type.startsWith('image/')) {
             url = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = () => reject(new Error('Failed to convert image to base64'));
-              reader.readAsDataURL(file);
+              // Compress image if it's larger than 2MB
+              if (file.size > 2 * 1024 * 1024) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                  // Calculate dimensions to reduce file size
+                  let { width, height } = img;
+                  const maxDimension = 1920; // Max width/height
+                  
+                  if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                      height = (height * maxDimension) / width;
+                      width = maxDimension;
+                    } else {
+                      width = (width * maxDimension) / height;
+                      height = maxDimension;
+                    }
+                  }
+                  
+                  canvas.width = width;
+                  canvas.height = height;
+                  ctx?.drawImage(img, 0, 0, width, height);
+                  
+                  // Convert to JPEG with quality 0.8 to reduce file size
+                  const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                  resolve(compressedDataUrl);
+                };
+                
+                img.onerror = () => reject(new Error('Failed to load image for compression'));
+                
+                const fileReader = new FileReader();
+                fileReader.onload = (e) => {
+                  img.src = e.target?.result as string;
+                };
+                fileReader.onerror = () => reject(new Error('Failed to read image file'));
+                fileReader.readAsDataURL(file);
+              } else {
+                // Small image, convert directly to base64
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('Failed to convert image to base64'));
+                reader.readAsDataURL(file);
+              }
             });
           } else {
             // For other files, use blob URL
@@ -468,13 +517,18 @@ const ChatPage = () => {
         } catch (error) {
           console.error('Error processing file:', file.name, error);
           
-          // For images, try a simpler base64 conversion as fallback
-          if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(file.name)) {
+          // Show file error to user
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error processing file';
+          toast.error(`${file.name}: ${errorMessage}`);
+          
+          // For images under 20MB, try a simpler base64 conversion as fallback
+          if (file.type.startsWith('image/') && file.size < 20 * 1024 * 1024) {
             console.log('Attempting fallback base64 conversion for image:', file.name);
             try {
-              const base64Url = await new Promise<string>((resolve) => {
+              const base64Url = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('Failed to read file'));
                 reader.readAsDataURL(file);
               });
               return {
@@ -486,6 +540,7 @@ const ChatPage = () => {
               };
             } catch (fallbackError) {
               console.error('Fallback base64 conversion also failed:', file.name, fallbackError);
+              toast.error(`Failed to process ${file.name}. Try a smaller image.`);
             }
           }
           
@@ -915,6 +970,17 @@ const ChatPage = () => {
     }
     
     if (!input.trim() && selectedFiles.length === 0) return;
+
+    // Validate payload size to prevent HTTP 413 errors
+    const totalSize = selectedFiles.reduce((sum, file) => sum + (file.url.length || 0), 0);
+    const textSize = new TextEncoder().encode(input.trim()).length;
+    const totalPayloadSize = totalSize + textSize;
+    
+    // If payload is too large (over 25MB), warn and limit files
+    if (totalPayloadSize > 25 * 1024 * 1024) {
+      toast.error(`Message too large (${(totalPayloadSize / 1024 / 1024).toFixed(1)}MB). Please reduce file sizes or send fewer files.`);
+      return;
+    }
 
     const userMessage = { 
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 
