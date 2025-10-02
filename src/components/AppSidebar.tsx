@@ -157,7 +157,7 @@ const AppSidebar = () => {
       const chats = await response.json();
       
       // Quick title processing without database updates for performance
-      const processedChats = chats.map((chat: { chatId: string; title: string; updatedAt: string; messages: { content: string }[] }) => {
+      const processedChats = chats.map((chat: { chatId: string; title: string; updatedAt: string; messages: { role: string; content: string }[] }) => {
         let newTitle = chat.title;
         
         // Quick fix for invalid titles without database updates

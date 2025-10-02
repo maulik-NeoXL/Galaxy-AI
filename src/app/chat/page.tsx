@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { Textarea } from "@/components/ui/textarea";
+import { estimateTokens, getModelLimit } from '@/lib/context-manager';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -60,6 +61,37 @@ const ChatPage = () => {
   // Removed userId as it's not needed for localStorage
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  // NEW: Context management state (only initialize on client)
+  const [contextUsage, setContextUsage] = useState<{
+    tokens: number;
+    limit: number;
+    percentage: number;
+    needsOptimization: boolean;
+  }>({
+    tokens: 0,
+    limit: 4096, // Default GPT-3.5 Turbo limit
+    percentage: 0,
+    needsOptimization: false
+  });
+
+  // NEW: Update context usage calculation
+  function updateContextUsage(messagesToCheck: Array<{role: string; content: string}>, model: string) {
+    const tokens = estimateTokens(messagesToCheck.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    })));
+    const limit = getModelLimit(model);
+    const percentage = Math.round((tokens / limit) * 100);
+    const needsOptimization = tokens > limit * 0.85;
+    
+    setContextUsage({
+      tokens,
+      limit,
+      percentage,
+      needsOptimization
+    });
+  }
 
   const models = [
     { name: 'GPT-3.5 Turbo', logo: SiOpenai },
@@ -181,7 +213,7 @@ const ChatPage = () => {
                   const simpleResult = await simpleResp.value.json();
                   if (simpleResult.data && simpleResult.data.length > 0) {
                     console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
-                    return simpleResult.data.map(item => ({ memory: item.memory }));
+                    return simpleResult.data.map((item: any) => ({ memory: item.memory }));
                   }
                 }
                 
@@ -242,8 +274,10 @@ const ChatPage = () => {
       }
       
                 // Save completed conversation to MongoDB and memory
+                console.log('🔍 isClient value:', isClient, 'typeof isClient:', typeof isClient);
                 if (isClient) {
                   const finalMessages = [...messages, userMessage, assistantMessage];
+                  console.log('🚀 Calling saveChatToMongoDB from handleFloatingInput - finalMessages:', finalMessages.length, 'isClient:', isClient);
                   saveChatToMongoDB(finalMessages, false);
 
                   // Save to memory asynchronously without blocking UI  
@@ -313,6 +347,8 @@ const ChatPage = () => {
   useEffect(() => {
     setMounted(true);
     setIsClient(true);
+    // Initialize context usage on mount
+    updateContextUsage(messages, selectedModel);
     
     // UploadCare initialization removed - using native file input instead
   }, []);
@@ -358,7 +394,7 @@ const ChatPage = () => {
 
   // Handle URL parameters and friendly URLs
   useEffect(() => {
-    if (!isClient) return; // Only run on client side
+    if (!mounted || !isClient) return; // Only run on client side
     
     const urlChatId = searchParams.get('chatId');
     const isNewChat = searchParams.get('new') === 'true';
@@ -403,7 +439,7 @@ const ChatPage = () => {
     setChatId(prevChatId => {
       if (!prevChatId) {
         console.log('No chatId found, creating new chat');
-        return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return `chat_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
       }
       return prevChatId;
     });
@@ -417,6 +453,13 @@ const ChatPage = () => {
   }, [isClient, chatId]);
 
   // Listen for clearChatContent event from sidebar
+  // NEW: Update context usage when messages or model changes
+  useEffect(() => {
+    if (mounted) {
+      updateContextUsage(messages, selectedModel);
+    }
+  }, [messages, selectedModel, mounted]);
+
   useEffect(() => {
     const handleClearChatContent = () => {
       setMessages([]);
@@ -503,7 +546,7 @@ const ChatPage = () => {
               if (file.size > 2 * 1024 * 1024) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const img = new Image() as HTMLImageElement;
+                const img = new Image();
                 
                 img.onload = () => {
                   // Calculate dimensions to reduce file size
@@ -656,7 +699,11 @@ const ChatPage = () => {
   };
 
   const saveChatToMongoDB = async (newMessages: typeof messages, forceTitleGeneration = false) => {
-    if (!isClient) return;
+    console.log('📊 saveChatToMongoDB called - mounted:', mounted, 'isClient:', isClient, 'messages:', newMessages.length);
+    if (!mounted || !isClient) {
+      console.log('❌ saveChatToMongoDB skipped - mounted:', mounted, 'isClient:', isClient);
+      return;
+    }
     
     try {
       // Generate title from first meaningful user message
@@ -668,6 +715,9 @@ const ChatPage = () => {
       console.log('saveChatToMongoDB - userMessages.length:', userMessages.length);
       console.log('saveChatToMongoDB - titleGenerated:', titleGenerated);
       console.log('saveChatToMongoDB - forceTitleGeneration:', forceTitleGeneration);
+      console.log('saveChatToMongoDB - currentChatTitle:', currentChatTitle);
+      console.log('saveChatToMongoDB - userId:', user?.id || 'anonymous');
+      console.log('saveChatToMongoDB - chatId:', chatId);
       
       // Generate title if:
       // 1. Force generation is requested, OR
@@ -692,6 +742,13 @@ const ChatPage = () => {
       }
       
       // Save to MongoDB with retry logic
+      console.log('Sending chat to MongoDB:', {
+        chatId,
+        userId: user?.id || 'anonymous',
+        title: chatTitle,
+        messageCount: newMessages.length
+      });
+      
       await fetchWithRetry('/api/chats', {
         method: 'POST',
         headers: {
@@ -709,7 +766,7 @@ const ChatPage = () => {
         maxDelay: 5000
       });
       
-      console.log('Chat saved to MongoDB:', chatId, 'Title:', chatTitle);
+      console.log('Chat saved to MongoDB successfully:', chatId, 'Title:', chatTitle);
       
       // Update current chat title with typing effect only if title changed
       if (chatTitle !== currentChatTitle) {
@@ -732,7 +789,7 @@ const ChatPage = () => {
   };
 
   const loadChatHistory = async () => {
-    if (!isClient) return;
+    if (!mounted || !isClient) return;
     
     try {
       // Load from MongoDB using silent fetch for expected 404s
@@ -1058,7 +1115,7 @@ const ChatPage = () => {
           if (simpleResult.data && simpleResult.data.length > 0) {
             console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
             console.log('📊 Simple Memory data:', simpleResult.data);
-            return simpleResult.data.map(item => ({ memory: item.memory }));
+            return simpleResult.data.map((item: any) => ({ memory: item.memory }));
           }
         }
         
@@ -1123,8 +1180,10 @@ const ChatPage = () => {
       }
 
       // Save completed conversation to MongoDB (update existing chat)
+      console.log('🔍 handleSubmit - isClient value:', isClient, 'typeof isClient:', typeof isClient);
       if (isClient) {
         const finalMessages = [...messages, userMessage, assistantMessage];
+        console.log('🚀 Calling saveChatToMongoDB from handleSubmit - finalMessages:', finalMessages.length, 'isClient:', isClient);
         // Only update messages, don't regenerate title
         saveChatToMongoDB(finalMessages, false);
         
@@ -1149,14 +1208,14 @@ const ChatPage = () => {
   };
 
   // Show loading while auth is loading or user is not authenticated
-  if (!isLoaded || !isSignedIn || !isClient || !chatId || !mounted) {
+  if (!mounted || !isClient || !isLoaded || !isSignedIn || !chatId) {
     return (
       <div className="flex flex-col h-screen bg-white">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <div className="text-gray-500">
-              {!isLoaded ? 'Loading...' : !isSignedIn ? 'Redirecting to sign up...' : 'Loading chat...'}
+              {!mounted ? 'Loading...' : !isLoaded ? 'Loading...' : !isSignedIn ? 'Redirecting to sign up...' : 'Loading chat...'}
             </div>
           </div>
         </div>
@@ -1657,6 +1716,16 @@ const ChatPage = () => {
                                         );
                                       })()}
                                       <ChevronDown className="w-3 h-3 text-gray-500" />
+                                      {/* Context Usage Indicator */}
+                                      <div className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                        contextUsage.needsOptimization 
+                                          ? 'bg-red-100 text-red-600' 
+                                          : contextUsage.percentage > 70 
+                                            ? 'bg-yellow-100 text-yellow-600' 
+                                            : 'bg-green-100 text-green-700'
+                                      }`}>
+                                        {contextUsage.percentage}%
+                                      </div>
                                     </button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent className="w-56 z-50" align="start">
@@ -1670,6 +1739,22 @@ const ChatPage = () => {
                                             console.log('Current chat title:', currentChatTitle);
                                             console.log('Current selected model:', selectedModel);
                                             setSelectedModel(model.name);
+                                            updateContextUsage(messages, model.name);
+                                            
+                                            // Show notification if context optimization is needed
+                                            if (messages.length > 0) {
+                                              const tokens = estimateTokens(messages.map(msg => ({
+                                                role: msg.role,
+                                                content: msg.content
+                                              })));
+                                              const limit = getModelLimit(model.name);
+                                              
+                                              if (tokens > limit * 0.85) {
+                                                toast.info(`💡 Context optimized for ${model.name}`, {
+                                                  description: `Longer conversations were condensed for better performance`
+                                                });
+                                              }
+                                            }
                                             // Update navbar title only if it's a new chat (showing "New chat")
                                             if (currentChatTitle === 'New chat') {
                                               console.log('Updating navbar title to model name for new chat:', model.name);

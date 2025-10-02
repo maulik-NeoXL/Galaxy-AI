@@ -3,149 +3,167 @@
 import { SignUp } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { SiOpenai } from 'react-icons/si';
 
 export default function SignUpPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen flex">
+      <div className="min-h-screen flex bg-white">
       {/* Left Column - Promotional Section */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 relative overflow-hidden">
-        {/* Abstract Background Lines */}
-        <div className="absolute top-0 right-0 w-64 h-64 opacity-20">
-          <svg viewBox="0 0 200 200" className="w-full h-full">
-            <path
-              d="M20,100 Q100,20 180,100 T160,180 Q80,180 100,100 T40,20"
-              stroke="white"
-              strokeWidth="2"
-              fill="none"
-            />
-            <path
-              d="M40,120 Q120,40 200,120 T180,200 Q100,200 120,120 T60,40"
-              stroke="white"
-              strokeWidth="2"
-              fill="none"
-            />
-          </svg>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 relative overflow-hidden rounded-3xl my-2 ml-2">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0">
+          {/* Floating particles */}
+          <div className="absolute top-16 right-24 w-2 h-2 bg-white/30 rounded-full animate-bounce"></div>
+          <div className="absolute top-32 left-20 w-1 h-1 bg-white/40 rounded-full animate-pulse"></div>
+          <div className="absolute top-52 right-28 w-1.5 h-1.5 bg-white/20 rounded-full animate-bounce"></div>
+          <div className="absolute top-72 left-28 w-1 h-1 bg-white/30 rounded-full animate-pulse"></div>
+          <div className="absolute top-28 right-20 w-2 h-2 bg-white/25 rounded-full animate-bounce"></div>
+          
+          {/* Gradient orbs */}
+          <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+          <div className="absolute bottom-1/3 left-1/3 w-24 h-24 bg-blue-300/20 rounded-full blur-lg"></div>
         </div>
 
-        {/* Left Column Content */}
-        <div className="relative z-10 flex flex-col justify-center items-center text-white p-12">
-          {/* Brand Icon */}
+        {/* Back to Home Button */}
+        <div className="absolute top-8 left-8 z-20">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back to home</span>
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col justify-center items-center text-white px-12 text-center">
+          {/* Brand */}
           <div className="mb-8">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-              <Zap className="w-8 h-8 text-blue-600" />
+            <div className="flex items-center gap-3 mb-4 justify-center">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <SiOpenai className="w-8 h-8 text-white" />
+              </div>
+              <span className="text-xl font-semibold">Galaxy AI</span>
             </div>
           </div>
 
-          {/* Greeting */}
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold mb-4">
-              Hello<br />
-              Galaxy AI! 👋
+          {/* Main heading */}
+          <div className="mb-8">
+            <h1 className="text-5xl font-bold mb-4 leading-tight">
+              Join our amazing community
             </h1>
-            <p className="text-lg opacity-90 leading-relaxed">
-              Join millions of users who are supercharged by AI conversations. Get highly productive 
-              through automation and save tons of time with our intelligent chat platform!
+            <p className="text-sm leading-relaxed text-blue-100 max-w-md mx-auto">
+              Start your AI journey today and unlock new levels of productivity and creativity.
             </p>
           </div>
 
-          {/* Copyright */}
-          <div className="absolute bottom-6 left-6 text-sm opacity-75">
-            © 2024 Galaxy AI. All rights reserved.
-          </div>
+
         </div>
       </div>
 
       {/* Right Column - Sign Up Form */}
-      <div className="w-full lg:w-1/2 bg-white flex items-center justify-center relative">
-        {/* Back to Home Button - Top Left */}
-        <div className="absolute top-6 left-6">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Button>
-        </div>
+      <div className="w-full lg:w-1/2 bg-white flex items-center justify-center relative lg:rounded-3xl ml-2">
 
-        {/* Sign Up Form Container */}
-        <div className="w-full max-w-md px-8 py-12">
-          {/* Brand Name */}
-          <div className="mb-2">
-            <h2 className="text-2xl font-bold text-gray-900">Galaxy AI</h2>
-          </div>
-
-          {/* Welcome Message */}
+        {/* Form Container */}
+        <div className="w-full max-w-sm px-8 py-16 flex flex-col items-center text-center">
+          {/* Header */}
           <div className="mb-8">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">Create an Account!</h3>
-            <p className="text-gray-600">
-              Already have an account?{' '}
-              <button
-                onClick={() => router.push('/sign-in')}
-                className="text-blue-600 hover:text-blue-700 underline font-medium"
-              >
-                Sign in to your account,
-              </button>{' '}
-              it's quick and easy!
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h2>
+            <p className="text-gray-600 text-sm mb-0">
+              Join Galaxy AI and start your AI journey
             </p>
           </div>
 
-          {/* Clerk Sign Up Component */}
+          {/* Sign-up Form */}
           <div className="space-y-6">
             <SignUp 
               forceRedirectUrl="/chat"
               appearance={{
                 elements: {
                   rootBox: 'w-full',
-                  card: 'shadow-none border-none bg-transparent',
-                  headerTitle: 'text-lg font-medium text-gray-900',
-                  headerSubtitle: 'text-sm text-gray-500 mb-6',
+                  card: 'shadow-none border-none bg-transparent p-0 flex flex-col items-center text-center',
+                  headerTitle: 'hidden',
+                  headerSubtitle: 'hidden',
+                  socialButtonsBlockContainer: 'space-y-3',
+                  socialButtonsBlockButton: 'w-full justify-center border-gray-200 hover:bg-gray-50 transition-colors h-11 text-sm font-medium border',
                   socialButtonsBlockButtonText: 'text-gray-700',
-                  socialButtonsBlockButton: 'border-gray-300 hover:bg-gray-50 transition-colors duration-200',
-                  dividerLine: 'bg-gray-300',
-                  dividerText: 'text-gray-500',
+                  dividerLine: 'bg-gray-200',
+                  dividerText: 'text-gray-400 text-sm bg-white px-4',
                   formFieldLabel: 'text-sm font-medium text-gray-700 mb-2',
-                  formFieldInput: 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg',
-                  formButtonPrimary: 'bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium',
-                  footerActionLink: 'text-blue-600 hover:text-blue-700',
-                  formFieldErrorText: 'text-red-600 text-sm',
+                  formFieldInputWrapper: 'mb-4',
+                  formFieldInput: 'border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-2 rounded-lg h-11 transition-colors',
+                  formButtonPrimary: 'w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium h-11 transition-colors',
+                  footerActionLink: 'text-blue-600 hover:text-blue-700 text-sm transition-colors',
+                  formFieldErrorText: 'text-red-500 text-sm mt-1',
+                  formFieldError: 'text-red-500',
+                  alertText: 'text-sm',
+                  identityInputText: 'border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-2 rounded-lg h-11',
+                  formFieldInputShowPasswordButton: 'text-gray-400 hover:text-gray-600',
+                  formFieldInputShowPasswordIcon: 'w-4 h-4',
+                  footer: 'mt-6 text-center',
+                  footerAction: 'text-sm',
+                  footerActionText: 'text-gray-600 text-sm',
+                  footerActionText__signUp: 'text-sm',
+                  footerActionText__signIn: 'text-sm',
+                  footerActionLink__signUp: 'text-blue-600 hover:text-blue-700 text-sm font-medium',
+                  footerActionLink__signIn: 'text-blue-600 hover:text-blue-700 text-sm font-medium',
                 },
                 layout: {
                   socialButtonsPlacement: 'top',
+                  socialButtonsSpacing: 'repeated',
                 },
                 variables: {
                   colorPrimary: '#111827',
                   colorBackground: '#ffffff',
                   colorText: '#111827',
+                  colorTextSecondary: '#6b7280',
                   colorInputBackground: '#ffffff',
                   colorInputText: '#111827',
+                  colorDanger: '#EF4444',
+                  borderRadius: '8px',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  fontSize: '14px',
                 }
               }}
             />
-          </div>
 
-          {/* Terms and Conditions */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
-              By creating an account, you agree to our{' '}
-              <span className="text-blue-600 hover:text-blue-700 underline cursor-pointer">
-                Terms of Service
-              </span>{' '}
-              and{' '}
-              <span className="text-blue-600 hover:text-blue-700 underline cursor-pointer">
-                Privacy Policy
-              </span>
+            {/* Sign in prompt */}
+            <div className="text-center pt-4">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <button
+                onClick={() => router.push('/sign-in')}
+                className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                Sign in here
+              </button>
             </p>
+            </div>
+
+            {/* Terms */}
+            <div className="text-center pt-6 border-t border-gray-100">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                By creating an account, you agree to our{' '}
+                <button className="text-blue-600 hover:text-blue-700 underline">
+                  Terms of Service
+                </button>{' '}
+                and{' '}
+                <button className="text-blue-600 hover:text-blue-700 underline">
+                  Privacy Policy
+                </button>
+              </p>
+            </div>
           </div>
         </div>
+
       </div>
 
-      {/* Mobile Promotional Section */}
-      <div className="lg:hidden absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 z-0"></div>
+      {/* Mobile overlay */}
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 z-0"></div>
     </div>
   );
 }

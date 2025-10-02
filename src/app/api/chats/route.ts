@@ -4,7 +4,9 @@ import Chat from '@/models/Chat';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Chats API GET request received');
     await connectDB();
+    console.log('MongoDB connected for GET request');
     
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -12,10 +14,13 @@ export async function GET(request: NextRequest) {
     
     if (chatId) {
       // Get specific chat
+      console.log('Looking for chatId:', chatId);
       const chat = await Chat.findOne({ chatId });
       if (!chat) {
+        console.log('Chat not found in database for ID:', chatId);
         return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
       }
+      console.log('Chat found:', chat.title);
       return NextResponse.json(chat);
     }
     
@@ -36,11 +41,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Chats API POST request received');
     await connectDB();
+    console.log('MongoDB connected for POST request');
     
     const { chatId, userId, title, messages } = await request.json();
     
+    console.log('POST chat data:', { chatId, userId, title, messageCount: messages?.length || 0 });
+    
     if (!chatId || !userId || !title) {
+      console.log('Missing required fields:', { chatId: !!chatId, userId: !!userId, title: !!title });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
@@ -56,6 +66,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(existingChat);
     } else {
       // Create new chat
+      console.log('Creating new chat with data:', { chatId, userId, title, messageCount: messages?.length || 0 });
       const newChat = new Chat({
         chatId,
         userId,
@@ -63,12 +74,25 @@ export async function POST(request: NextRequest) {
         messages: messages || [],
         timestamp: Date.now()
       });
-      await newChat.save();
-      return NextResponse.json(newChat);
+      
+      try {
+        const savedChat = await newChat.save();
+        console.log('Chat saved successfully:', savedChat.chatId);
+        return NextResponse.json(savedChat);
+      } catch (saveError) {
+        console.error('Error saving new chat:', saveError);
+        console.error('Chat data that failed:', newChat);
+        throw saveError;
+      }
     }
   } catch (error) {
-    console.error('Error saving chat:', error);
-    return NextResponse.json({ error: 'Failed to save chat' }, { status: 500 });
+    console.error('Detailed error saving chat:', error);
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+    return NextResponse.json({ 
+      error: 'Failed to save chat',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

@@ -2,6 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 import { xai } from '@ai-sdk/xai';
 import { streamText } from 'ai';
+import { trimMessagesForModel, estimateTokens, getModelLimit } from '@/lib/context-manager';
 
 export async function POST(req: Request) {
   const { messages, model } = await req.json();
@@ -22,10 +23,25 @@ export async function POST(req: Request) {
   };
 
   const selectedModel = modelMap[model] || modelMap['GPT-3.5 Turbo'];
+  
+  // NEW: Context window management
+  const maxTokens = getModelLimit(model);
+  const originalTokenCount = estimateTokens(messages);
+  
+  console.log(`🤖 Processing chat with ${model} (${originalTokenCount}/${maxTokens} tokens)`);
+  
+  // Trim messages if necessary
+  const contextResult = trimMessagesForModel(messages, model);
+  
+  // Log optimization details if messages were trimmed
+  if (contextResult.wasTrimmed) {
+    console.log(`📝 Context trimmed: ${contextResult.originalCount} → ${contextResult.trimmedMessages.length} messages`);
+    console.log(`🎯 Token optimization: ${contextResult.tokenCount}`);
+  }
 
   const result = await streamText({
     model: selectedModel.provider(selectedModel.modelId),
-    messages,
+    messages: contextResult.trimmedMessages,
   });
 
   return result.toTextStreamResponse();
