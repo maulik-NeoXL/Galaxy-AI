@@ -57,7 +57,7 @@ export default function SignInPage() {
               Experience AI at its finest
             </h1>
             <p className="text-sm leading-relaxed text-blue-100 max-w-md mx-auto">
-              Join thousands of users who've transformed their productivity with intelligent conversations and automation.
+              Join thousands of users who&apos;ve transformed their productivity with intelligent conversations and automation.
             </p>
           </div>
 
@@ -135,7 +135,7 @@ export default function SignInPage() {
             {/* Sign up prompt */}
             <div className="text-center pt-4">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   onClick={() => router.push('/sign-up')}
                   className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
