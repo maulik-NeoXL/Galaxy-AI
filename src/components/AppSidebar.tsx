@@ -155,17 +155,50 @@ const AppSidebar = () => {
       });
       
       const chats = await response.json();
-      const chatItems: ChatItem[] = chats.map((chat: { chatId: string; title: string; updatedAt: string; messages: { content: string }[] }) => ({
-        id: chat.chatId,
-        title: chat.title || 'New chat',
-        displayedTitle: chat.title || 'New chat',
-        isTypingTitle: false,
-        timestamp: new Date(chat.updatedAt).getTime(),
-        preview: chat.messages && chat.messages.length > 0 
-          ? chat.messages[chat.messages.length - 1].content.substring(0, 50) + (chat.messages[chat.messages.length - 1].content.length > 50 ? '...' : '')
-          : ''
+      
+      // Generate proper titles for chats with invalid titles
+      const processedChats = await Promise.all(chats.map(async (chat: { chatId: string; title: string; updatedAt: string; messages: { content: string }[] }) => {
+        let newTitle = chat.title;
+        
+        // Fix chats with "GPT-3.5 Turbo" title by generating a proper title from first message
+        if (!chat.title || chat.title === 'GPT-3.5 Turbo' || chat.title === 'New chat') {
+          if (chat.messages && chat.messages.length > 0) {
+            // Generate title from first user message
+            const firstUserMessage = chat.messages.find(msg => msg.role === 'user');
+            if (firstUserMessage) {
+              newTitle = firstUserMessage.content.substring(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '');
+              // Update the chat with the new title in database
+              try {
+                await fetchWithRetry('/api/chats', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chatId: chat.chatId,
+                    userId: user?.id || 'anonymous',
+                    title: newTitle,
+                    messages: chat.messages
+                  })
+                });
+              } catch (updateError) {
+                console.log('Could not update chat title for', chat.chatId);
+              }
+            }
+          }
+        }
+        
+        return {
+          id: chat.chatId,
+          title: newTitle || 'New chat',
+          displayedTitle: newTitle || 'New chat',
+          isTypingTitle: false,
+          timestamp: new Date(chat.updatedAt).getTime(),
+          preview: chat.messages && chat.messages.length > 0 
+            ? chat.messages[chat.messages.length - 1].content.substring(0, 50) + (chat.messages[chat.messages.length - 1].content.length > 50 ? '...' : '')
+            : ''
+        };
       }));
-      setChatItems(chatItems);
+      
+      setChatItems(processedChats);
     } catch (error) {
       console.error('Error loading chat items:', error);
       toast.error(getErrorMessage(error));
