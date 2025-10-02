@@ -20,6 +20,7 @@ import CodeBlock from "@/components/CodeBlock";
 import { toast } from "sonner";
 import { fetchWithRetry, fetchSilent, getErrorMessage } from "@/lib/network-utils";
 import ImageWithProgress from "@/components/ImageWithProgress";
+// import uploadcare from 'uploadcare-widget'; // Commented out - not currently using
 
 const ChatPage = () => {
   const searchParams = useSearchParams();
@@ -45,7 +46,6 @@ const ChatPage = () => {
     url: string;
     publicId: string;
   }>>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedModel, setSelectedModel] = useState('GPT-3.5 Turbo');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,6 +55,8 @@ const ChatPage = () => {
   const [isTypingTitle, setIsTypingTitle] = useState(false);
   const [titleGenerated, setTitleGenerated] = useState(false);
   const [selectedText, setSelectedText] = useState<{text: string, messageId: string, position: {x: number, y: number}} | null>(null);
+  const [suggestion, setSuggestion] = useState<{text: string, visible: boolean} | null>(null);
+  const [floatingInput, setFloatingInput] = useState<{text: string, visible: boolean} | null>(null);
   // Removed userId as it's not needed for localStorage
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -79,6 +81,9 @@ const ChatPage = () => {
 
   // Handle text selection and Ask ChatGPT button
   const handleTextSelection = (messageId: string, event: React.MouseEvent) => {
+    // Prevent default selection behavior
+    event.preventDefault();
+    
     // Small delay to ensure selection is complete
     setTimeout(() => {
       const selection = window.getSelection();
@@ -97,23 +102,126 @@ const ChatPage = () => {
               y: rect.top - 50 // Position higher above the selection
             }
           });
+          // Clear the selection to remove cursor
+          selection.removeAllRanges();
         }
       }
     }, 10);
   };
 
+  // Handle double-click detection for "Recursion" text
+  const handleDoubleClick = (messageId: string, event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    const text = target.textContent || '';
+    
+    // Check if the double-clicked text contains "Recursion"
+    if (text.toLowerCase().includes('recursion')) {
+      setSuggestion({
+        text: 'Click',
+        visible: true
+      });
+    }
+  };
+
   const handleAskChatGPT = () => {
     if (selectedText) {
-      setInput(selectedText.text);
+      // Show floating input with quoted text
+      setFloatingInput({
+        text: `"${selectedText.text}"`,
+        visible: true
+      });
       setSelectedText(null);
-      // Focus on input after setting the text
-      setTimeout(() => {
-        const inputElement = document.querySelector('textarea[placeholder*="Type your message"]') as HTMLTextAreaElement;
-        if (inputElement) {
-          inputElement.focus();
-        }
-      }, 100);
     }
+  };
+
+
+  const handleCloseSuggestion = () => {
+    setSuggestion(null);
+  };
+
+  const handleFloatingInputSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!floatingInput?.text.trim()) return;
+
+    const userMessage = { 
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 
+      role: 'user' as const, 
+      content: floatingInput.text.trim(),
+      files: [] 
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setFloatingInput(null);
+    setIsLoading(true);
+
+    try {
+      // Load memory context for AI
+      console.log('About to load memory context for floating input');
+      const memoryContext = await loadMemoryContext();
+      
+      // Prepare messages with context
+      const contextMessages = memoryContext.length > 0 
+        ? [
+            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: any) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
+            ...messages,
+            userMessage
+          ]
+        : [...messages, userMessage];
+      
+      console.log('Floating input context messages:', contextMessages);
+
+      const response = await fetchWithRetry('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: contextMessages,
+          model: selectedModel 
+        }),
+      }, {
+        maxRetries: 2,
+        baseDelay: 2000,
+        maxDelay: 8000
+      });
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const assistantMessage = { id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, role: 'assistant' as const, content: '' };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        assistantMessage.content += chunk;
+        setMessages(prev => {
+          const updatedMessages = prev.map(msg => 
+          msg.id === assistantMessage.id ? { ...msg, content: assistantMessage.content } : msg
+          );
+          return updatedMessages;
+        });
+      }
+      
+      // Save completed conversation to MongoDB and memory
+      if (isClient) {
+        const finalMessages = [...messages, userMessage, assistantMessage];
+        saveChatToMongoDB(finalMessages, false);
+        
+        // Save to memory for AI memory
+        const memoryUserMessage = { ...userMessage, files: undefined };
+        const memoryAssistantMessage = { ...assistantMessage, files: undefined };
+        saveToMemory([memoryUserMessage, memoryAssistantMessage]);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCloseFloatingInput = () => {
+    setFloatingInput(null);
   };
 
   // Close selection on outside click
@@ -158,15 +266,45 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Set client flag on mount and initialize chatId
+  // Set client flag on mount and initialize UploadCare
   useEffect(() => {
     setMounted(true);
     setIsClient(true);
-    // Initialize chatId only on client side to avoid hydration mismatch
-    if (!chatId) {
-      setChatId(`chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-    }
+    
+    // UploadCare initialization removed - using native file input instead
   }, []);
+
+  // Update document title and URL based on chat title
+  useEffect(() => {
+    if (isClient && chatId) {
+      if (displayedTitle && displayedTitle !== 'GPT-3.5 Turbo' && displayedTitle !== 'New chat') {
+        // Update document title to include chat title
+        document.title = `${displayedTitle} - Chat`;
+        
+        // Update URL to include chat title in path
+        const chatTitlePath = displayedTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .substring(0, 50); // Limit length
+        
+        const newPath = `/chat/${chatTitlePath}-${chatId.substring(5)}`; // Remove 'chat_' prefix
+        
+        // Only update URL if we're not already on the correct friendly URL
+        const currentPath = window.location.pathname;
+        if (chatId.startsWith('chat_') && currentPath !== newPath) {
+          window.history.replaceState({}, '', newPath);
+        }
+      } else {
+        // Fallback to simple localhost title  
+        document.title = "localhost";
+        // Also ensure we're on a clean /chat URL for basic chats
+        if (window.location.pathname !== '/chat') {
+          window.history.replaceState({}, '', '/chat');
+        }
+      }
+    }
+  }, [displayedTitle, chatId, isClient]);
 
   // Redirect to sign-up if not authenticated
   useEffect(() => {
@@ -175,21 +313,57 @@ const ChatPage = () => {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Handle new chat from sidebar
+  // Handle URL parameters and friendly URLs
   useEffect(() => {
     if (!isClient) return; // Only run on client side
     
-    if (searchParams.get('new') === 'true') {
+    const urlChatId = searchParams.get('chatId');
+    const isNewChat = searchParams.get('new') === 'true';
+    const currentPath = window.location.pathname;
+    
+    // Check if we're on a friendly URL like /chat/chat-title-abc123
+    let extractedChatId = null;
+    if (currentPath.startsWith('/chat/') && !currentPath.includes('?')) {
+      const pathParts = currentPath.split('/');
+      if (pathParts.length >= 3) {
+        const lastPart = pathParts[2];
+        // Extract chatId from format: title-abc123
+        const chatIdMatch = lastPart.match(/-([a-z0-9]{8,})$/);
+        if (chatIdMatch) {
+          extractedChatId = `chat_${chatIdMatch[1]}`;
+        }
+      }
+    }
+    
+    if (isNewChat) {
       handleNewChat();
       // Remove the query parameter from URL
       window.history.replaceState({}, '', '/chat');
-    } else if (searchParams.get('chatId')) {
-      const chatIdFromUrl = searchParams.get('chatId');
-      if (chatIdFromUrl && chatIdFromUrl !== chatId) {
-        setChatId(chatIdFromUrl);
-        // Keep the chatId in URL for sidebar highlighting
-      }
+      return;
     }
+    
+    if (urlChatId) {
+      // Load existing chat from URL parameter
+      console.log('Loading chat from URL parameter:', urlChatId);
+      setChatId(urlChatId);
+      return;
+    }
+    
+    if (extractedChatId) {
+      // Load chat from friendly URL
+      console.log('Loading chat from friendly URL:', extractedChatId);
+      setChatId(extractedChatId);
+      return;
+    }
+    
+    // Only create new chat if no URL parameters or friendly URL
+    setChatId(prevChatId => {
+      if (!prevChatId) {
+        console.log('No chatId found, creating new chat');
+        return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      }
+      return prevChatId;
+    });
   }, [searchParams, isClient]);
 
   // Load chat history from localStorage on component mount
@@ -252,42 +426,86 @@ const ChatPage = () => {
     setEditContent('');
   };
 
-  const handleFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
+  const handleFileUpload = async () => {
+    // Create a hidden file input and use UploadCare to process files
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '*/*'; // Allow all file types
     
-    for (const file of files) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!response.ok) {
-          throw new Error('Upload failed');
+    input.onchange = async function(event: Event) {
+      const target = event.target as HTMLInputElement;
+      const files = Array.from(target.files || []);
+      
+      
+      if (files.length === 0) return;
+      
+      // Process files and convert to base64 for persistence
+      const processedFiles = await Promise.all(files.map(async (file) => {
+        try {
+          let url: string;
+          
+          // Convert images to base64 for persistence
+          if (file.type.startsWith('image/')) {
+            url = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => reject(new Error('Failed to convert image to base64'));
+              reader.readAsDataURL(file);
+            });
+          } else {
+            // For other files, use blob URL
+            url = URL.createObjectURL(file);
+          }
+          
+          return {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            url: url,
+            publicId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          };
+        } catch (error) {
+          console.error('Error processing file:', file.name, error);
+          
+          // For images, try a simpler base64 conversion as fallback
+          if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(file.name)) {
+            console.log('Attempting fallback base64 conversion for image:', file.name);
+            try {
+              const base64Url = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+              });
+              return {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                url: base64Url,
+                publicId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+              };
+            } catch (fallbackError) {
+              console.error('Fallback base64 conversion also failed:', file.name, fallbackError);
+            }
+          }
+          
+          // Final fallback to blob URL
+          return {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            url: URL.createObjectURL(file),
+            publicId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          };
         }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          setSelectedFiles(prev => [...prev, result.data]);
-        }
-      } catch (error) {
-        console.error('Error uploading file:', error);
-        toast.error(`Failed to upload ${file.name}`);
-      }
-    }
+      }));
+      
+      setSelectedFiles(prev => [...prev, ...processedFiles]);
+      toast.success(`${files.length} file(s) added successfully`);
+    };
     
-    // Clear the input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    // Trigger native file picker
+    input.click();
   };
 
   const removeFile = (index: number) => {
@@ -442,7 +660,7 @@ const ChatPage = () => {
       }
       
       // Load user context from Mem0
-      await loadMem0Context();
+      await loadMemoryContext();
     } catch (error) {
       // For other errors, log and show user-friendly message
       console.error('Failed to load chat history from MongoDB:', error);
@@ -503,38 +721,88 @@ const ChatPage = () => {
     }
   };
 
-  // Mem0 functions
-  const saveToMem0 = async (messages: Array<{id: string, role: 'user' | 'assistant', content: string, files?: File[]}>) => {
+  // Memory functions - use simple memory (skip Mem0 for now)
+  const saveToMemory = async (messages: Array<{id: string, role: 'user' | 'assistant', content: string, files?: File[]}>) => {
     try {
-      await fetchWithRetry('/api/mem0', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'save',
-          messages: messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
+      console.log('💾 Saving', messages.length, 'messages to memory systems...');
+      
+      // Save to both Mem0 and Simple Memory for redundancy
+      
+      // Save to Mem0 (for individual chat context)
+      try {
+        const mem0Response = await fetchWithRetry('/api/mem0', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'save',
+            messages: messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
           })),
-          userId: user?.id || 'anonymous',
-          runId: chatId
-        }),
-      }, {
-        maxRetries: 2,
-        baseDelay: 1000,
-        maxDelay: 3000
-      });
-      console.log('Saved to Mem0:', messages.length, 'messages');
+            userId: user?.id || 'anonymous',
+            runId: chatId
+          }),
+        }, {
+          maxRetries: 1,
+          baseDelay: 1000,
+          maxDelay: 2000
+        });
+        
+        const mem0Result = await mem0Response.json();
+        if (mem0Result.success) {
+          console.log('✅ Mem0 save successful:', mem0Result.data?.length || 0, 'memories created');
+        } else {
+          console.log('⚠️ Mem0 save failed:', mem0Result.error);
+        }
+      } catch (mem0Error) {
+        console.error('❌ Mem0 save error:', mem0Error);
+      }
+      
+      // Save to Simple Memory (for cross-chat memory)
+      try {
+        const simpleResponse = await fetchWithRetry('/api/simple-memory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'save',
+            messages: messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            userId: user?.id || 'anonymous',
+            runId: chatId
+          }),
+        }, {
+          maxRetries: 1,
+          baseDelay: 500,
+          maxDelay: 1000
+        });
+        
+        const simpleResult = await simpleResponse.json();
+        if (simpleResult.success) {
+          console.log('✅ Simple Memory save successful:', simpleResult.saved?.length || 0, 'memories saved');
+          console.log('📝 Saved memories:', simpleResult.saved);
+        } else {
+          console.log('⚠️ Simple Memory save failed:', simpleResult.error);
+        }
+      } catch (simpleError) {
+        console.error('❌ Simple Memory save error:', simpleError);
+      }
     } catch (error) {
-      console.error('Failed to save to Mem0:', error);
-      // Don't show error to user as this is background functionality
+      console.error('❌ Failed to save to memory systems:', error);
     }
   };
 
-  const loadMem0Context = async () => {
+  const loadMemoryContext = async () => {
     try {
-      const response = await fetchWithRetry('/api/mem0', {
+      console.log('Loading memory context for user:', user?.id || 'anonymous');
+      
+      // Try Mem0 first (will return empty for cross-chat as expected)
+      const mem0Response = await fetchWithRetry('/api/mem0', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -542,24 +810,54 @@ const ChatPage = () => {
         body: JSON.stringify({
           action: 'load',
           filters: {
-            user_id: user?.id || 'anonymous',
-            run_id: chatId
+            user_id: user?.id || 'anonymous'
           }
         }),
       }, {
-        maxRetries: 2,
+        maxRetries: 1,
         baseDelay: 1000,
-        maxDelay: 3000
+        maxDelay: 2000
       });
       
-      const result = await response.json();
-      console.log('Loaded Mem0 context:', result.data);
-      console.log('Full Mem0 response:', result);
-      console.log('Context length:', result.data?.length || 0);
-      return result.data || [];
-    } catch (error) {
-      console.error('Failed to load Mem0 context:', error);
-      return [];
+      const mem0Result = await mem0Response.json();
+      console.log('Mem0 load result:', mem0Result.data?.length || 0, 'memories');
+      
+      if (mem0Result.data && mem0Result.data.length > 0) {
+        console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
+        return mem0Result.data || [];
+      } else {
+        console.log('📝 Mem0 returned empty for cross-chat, trying Simple Memory...');
+        throw new Error('Mem0 empty results - expected for cross-chat');
+      }
+    } catch (mem0Error) {
+      console.log('🔄 Mem0 failed (expected for cross-chat), trying Simple Memory...');
+      
+      // Fallback to simple memory for cross-chat scenarios
+      try {
+        const simpleResponse = await fetchWithRetry('/api/simple-memory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'load',
+            userId: user?.id || 'anonymous',
+          }),
+        }, {
+          maxRetries: 1,
+          baseDelay: 500,
+          maxDelay: 1000
+        });
+        
+        const simpleResult = await simpleResponse.json();
+        console.log('✅ Simple Memory loaded:', simpleResult.data?.length || 0, 'memories');
+        console.log('📊 Simple Memory data:', simpleResult.data);
+        return simpleResult.data || [];
+      } catch (error) {
+          console.error('❌ Failed to load simple memory:', error);
+          toast.error('Failed to load memory context');
+          return [];
+        }
     }
   };
 
@@ -609,6 +907,13 @@ const ChatPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Don't submit main form if floating input is visible
+    if (floatingInput?.visible) {
+      console.log('Main form submission prevented - floating input is visible');
+      return;
+    }
+    
     if (!input.trim() && selectedFiles.length === 0) return;
 
     const userMessage = { 
@@ -632,15 +937,17 @@ const ChatPage = () => {
     }
 
     try {
-      // Load Mem0 context for AI
-      const mem0Context = await loadMem0Context();
-      console.log('Using Mem0 context:', mem0Context);
-      console.log('Context messages count:', mem0Context.length);
+      // Load memory context for AI
+      console.log('About to load memory context for user:', user?.id || 'anonymous');
+      const memoryContext = await loadMemoryContext();
+      console.log('Using memory context:', memoryContext);
+      console.log('Context messages count:', memoryContext.length);
+      console.log('Memory context details:', memoryContext.map(m => m.memory || 'No memory'));
       
       // Prepare messages with context
-      const contextMessages = mem0Context.length > 0 
+      const contextMessages = memoryContext.length > 0 
         ? [
-            { role: 'system', content: `Previous conversation context: ${mem0Context.map((m: { role: string; content: string }) => `${m.role}: ${m.content}`).join('\n')}` },
+            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: any) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
             ...messages,
             userMessage
           ]
@@ -687,10 +994,12 @@ const ChatPage = () => {
         // Only update messages, don't regenerate title
         saveChatToMongoDB(finalMessages, false);
         
-        // Save to Mem0 for AI memory (without files for now)
-        const mem0UserMessage = { ...userMessage, files: undefined };
-        const mem0AssistantMessage = { ...assistantMessage, files: undefined };
-        saveToMem0([mem0UserMessage, mem0AssistantMessage]);
+        // Save to memory for AI memory (without files for now)
+        console.log('About to save memory for user:', user?.id || 'anonymous');
+        console.log('Memory messages:', userMessage.content, assistantMessage.content);
+        const memoryUserMessage = { ...userMessage, files: undefined };
+        const memoryAssistantMessage = { ...assistantMessage, files: undefined };
+        saveToMemory([memoryUserMessage, memoryAssistantMessage]);
       }
       
     } catch (error) {
@@ -870,7 +1179,8 @@ const ChatPage = () => {
                         : 'bg-white text-gray-900 text-base'
                     }`}
                           onMouseUp={(e) => message.role === 'assistant' && handleTextSelection(message.id, e)}
-                          onTouchEnd={(e) => message.role === 'assistant' && handleTextSelection(message.id, e as any)}
+                          onTouchEnd={(e) => message.role === 'assistant' && handleTextSelection(message.id, e as unknown as React.MouseEvent)}
+                          onDoubleClick={(e) => message.role === 'assistant' && handleDoubleClick(message.id, e)}
                   >
                     {message.role === 'assistant' && message.content.includes('```') ? (
                       <div className="space-y-4 w-full max-w-full overflow-hidden block">
@@ -1016,9 +1326,67 @@ const ChatPage = () => {
             </h2>
           )}
           
+          {/* Suggestion */}
+          {suggestion && suggestion.visible && (
+            <div className="mb-4 w-full max-w-4xl mx-auto">
+              <div className="bg-gray-100 rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-200 transition-colors" onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Suggestion clicked, closing suggestion');
+                setSuggestion(null);
+              }}>
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="text-gray-700 font-medium">{suggestion.text}</span>
+                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseSuggestion();
+                  }}
+                  className="p-1 hover:bg-gray-300 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Input Field */}
-          <form onSubmit={handleSubmit} className="relative">
+          <form onSubmit={handleSubmit} action="#" className="relative">
             <div className="bg-white border border-gray-300 rounded-3xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              {/* Floating Input Bar */}
+              {floatingInput && floatingInput.visible && (
+                <div className="bg-gray-100 rounded-t-3xl px-4 py-3 border-b border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <Textarea
+                      value={floatingInput.text}
+                      onChange={(e) => setFloatingInput({...floatingInput, text: e.target.value})}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleFloatingInputSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+                        }
+                      }}
+                      placeholder="Ask anything"
+                      className="flex-1 border-0 shadow-none focus-visible:ring-0 text-gray-900 placeholder-gray-500 resize-none min-h-[24px] max-h-[120px] !rounded-none bg-transparent leading-normal cursor-default"
+                      rows={1}
+                      autoFocus
+                      style={{ caretColor: 'transparent' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCloseFloatingInput}
+                      className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                    >
+                      <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Selected Files Preview */}
               {selectedFiles.length > 0 && (
                 <div className="px-4 py-2 border-b border-gray-200">
@@ -1099,15 +1467,7 @@ const ChatPage = () => {
               {/* Separator */}
               <div className="border-t border-gray-200"></div>
               
-              {/* File Input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,.pdf,.doc,.docx,.txt"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+              {/* Hidden File Input */}
               
               {/* Control Bar */}
               <div className="flex items-center justify-between px-4 py-3">
@@ -1122,7 +1482,7 @@ const ChatPage = () => {
                                   <DropdownMenuContent className="w-56" align="start">
                                     <DropdownMenuItem onClick={handleFileUpload}>
                                       <Paperclip className="w-4 h-4 mr-2" />
-                                      Add photos & files
+                                      Upload files
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
                                       <Telescope className="w-4 h-4 mr-2" />
@@ -1198,7 +1558,7 @@ const ChatPage = () => {
                                 </DropdownMenu>
                 </div>
                 
-                {/* Right side - Send Button */}
+                {/* Right side - Send Button Only */}
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1254,21 +1614,14 @@ const ChatPage = () => {
           title="Ask ChatGPT"
           onClick={(e) => {
             e.stopPropagation();
-            setInput(selectedText.text);
-            setSelectedText(null);
-            // Focus on input after setting the text
-            setTimeout(() => {
-              const inputElement = document.querySelector('textarea[placeholder*="Type your message"]') as HTMLTextAreaElement;
-              if (inputElement) {
-                inputElement.focus();
-              }
-            }, 100);
+            handleAskChatGPT();
           }}
         >
           <FaQuoteRight className="w-3 h-3 text-gray-600" />
           <span className="font-medium text-gray-700" style={{ fontSize: '14px' }}>Ask ChatGPT</span>
         </div>
       )}
+
     </div>
     </TooltipProvider>
   );

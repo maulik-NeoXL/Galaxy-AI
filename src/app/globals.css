@@ -132,4 +132,96 @@
     font-size: 16px !important;
   }
   
+  /* UploadCare Dialog Modern Styling */
+  .uploadcare--widget {
+    border-radius: 12px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border: none !important;
+  }
+
+  .uploadcare--widget__progress-bar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 4px !important;
+  }
+
+  .uploadcare--widget__dragndrop-area {
+    border-radius: 8px !important;
+    border: 2px dashed #d1d5db !important;
+    background: white !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .uploadcare--widget__dragndrop-area:hover {
+    border-color: #667eea !important;
+    background: #f8fafc !important;
+  }
+
+  .uploadcare--widget__button_type_open {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .uploadcare--widget__button_type_open:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+  }
+
+  .uploadcare--popup {
+    border-radius: 12px !important;
+  }
+
+  .uploadcare--popup__body {
+    border-radius: 8px !important;
+  }
+
+  .uploadcare--tab {
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .uploadcare--tab:hover {
+    background: #f3f4f6 !important;
+  }
+
+  .uploadcare--tab_is-current {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+  }
+
+  .uploadcare--button_type_close {
+    background: transparent !important;
+    border: none !important;
+    color: #6b7280 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .uploadcare--button_type_close:hover {
+    color: #374151 !important;
+    transform: scale(1.1) !important;
+  }
+
+  /* Custom Upload Button Styling */
+  .upload-btn {
+    background-color: #E0E0E0 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: #000000 !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+  }
+
+  .upload-btn:hover {
+    background-color: #D1D5DB !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .upload-btn:active {
+    transform: translateY(0) !important;
+  }
 }

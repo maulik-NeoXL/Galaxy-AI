@@ -17,12 +17,20 @@ export async function POST(request: NextRequest) {
         console.log('Saving messages:', messages);
         console.log('User ID:', userId);
         console.log('Run ID:', runId);
-        const response = await client.add(messages, {
-          user_id: userId,
-          run_id: runId
-        });
-        console.log('Save response:', response);
-        return NextResponse.json({ success: true, data: response });
+        console.log('Message format:', messages.map(m => ({ role: m.role, contentLength: m.content.length })));
+        
+        try {
+          const response = await client.add(messages, {
+            user_id: userId,
+            run_id: runId
+          });
+          console.log('Save response:', response);
+          console.log('Save successful - memories created:', response?.length || 0);
+          return NextResponse.json({ success: true, data: response });
+        } catch (error) {
+          console.error('Save error:', error);
+          return NextResponse.json({ error: 'Failed to save memories' }, { status: 500 });
+        }
 
       case 'load':
         // Load messages from Mem0
@@ -30,20 +38,36 @@ export async function POST(request: NextRequest) {
         console.log('Filter type:', typeof filters);
         console.log('Filter keys:', Object.keys(filters || {}));
         
-        // Try different approaches to load memories
         let memories;
         try {
-          // First try with the provided filters
-          memories = await client.getAll(filters);
+          const searchFilters = filters || {};
+          
+          if (searchFilters.run_id) {
+            // If we have run_id (specific chat), get memories from that chat
+            console.log('Loading memories for specific chat:', searchFilters.run_id);
+            memories = await client.getAll(searchFilters);
+          } else if (searchFilters.user_id) {
+            // For cross-chat memory, we need to get memories from multiple chats
+            // Since Mem0 requires run_id, we'll get memories from the most recent chats
+            console.log('Loading cross-chat memories for user:', searchFilters.user_id);
+            
+            // Try to load memories from recent chats (this is a limitation of Mem0)
+            // For now, return empty array - use simple memory for cross-chat
+            memories = [];
+            console.log('Cross-chat memory not supported by Mem0 - use simple memory instead');
+          } else {
+            // No valid filters
+            memories = [];
+            console.log('No valid filters provided');
+          }
+          
           console.log('Load response with filters:', memories);
+          console.log('Memories count:', memories?.length || 0);
         } catch (error) {
-          console.log('Error with filters, trying with empty object:', error);
-          // If that fails, try with empty object
-          memories = await client.getAll({});
-          console.log('Load response with empty object:', memories);
+          console.log('Error loading memories:', error);
+          memories = []; // Return empty array on error
         }
         
-        console.log('Memories count:', memories?.length || 0);
         return NextResponse.json({ success: true, data: memories });
 
       case 'search':

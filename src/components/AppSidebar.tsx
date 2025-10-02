@@ -544,14 +544,22 @@ const AppSidebar = () => {
                 <SidebarMenu className="flex flex-col gap-0">
                   {chatItems.map((chat) => {
                     const currentChatId = searchParams.get('chatId');
-                    const isActive = currentChatId === chat.id;
+                    
+                    // Also check if we're on a friendly URL path
+                    const currentPath = window.location.pathname;
+                    let activeFromPath = false;
+                    if (currentPath.includes(`-${chat.id.substring(5)}`)) {
+                      activeFromPath = true;
+                    }
+                    
+                    const isActive = currentChatId === chat.id || activeFromPath;
                     
                     return (
                       <SidebarMenuItem key={chat.id}>
                         <div className={`group/chat-item relative px-2 transition-all duration-200 flex items-center justify-between cursor-pointer rounded-md ${
-                          isActive && state === "expanded"
+                          isActive
                             ? 'bg-gray-200' 
-                            : 'hover:bg-gray-200'
+                            : 'hover:bg-gray-100'
                         }`} style={{ paddingTop: '6px', paddingBottom: '6px' }}>
                           <div 
                             className="flex-1 cursor-pointer" 
@@ -657,7 +665,7 @@ const AppSidebar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton 
-                  className={`px-2 py-4 hover:py-4 hover:bg-gray-200 transition-all duration-200 ${state === "collapsed" ? "w-10 justify-center" : ""}`}
+                  className={`py-6 hover:py-6 hover:bg-gray-200 transition-all duration-200 ${state === "collapsed" ? "w-10 justify-center" : ""}`}
                   suppressHydrationWarning
                 >
                   <div className={`w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs ${state === "collapsed" ? "mx-auto" : ""}`} style={{minWidth: '24px', minHeight: '24px', aspectRatio: '1/1'}}>

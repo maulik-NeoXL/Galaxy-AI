@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Open AI",
+  title: "localhost",
   description: "AI-powered chat assistant",
   icons: {
     icon: '/favicon.svg',

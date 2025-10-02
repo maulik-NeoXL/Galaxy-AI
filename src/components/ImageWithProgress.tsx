@@ -42,6 +42,7 @@ export default function ImageWithProgress({
     const img = new Image();
     
     img.onload = () => {
+      console.log('Image loaded successfully:', src.substring(0, 50) + '...');
       clearInterval(progressInterval);
       setProgress(100);
       setTimeout(() => {
@@ -50,13 +51,15 @@ export default function ImageWithProgress({
       }, 200);
     };
 
-    img.onerror = () => {
+    img.onerror = (error) => {
+      console.error('Image failed to load:', src.substring(0, 50) + '...', error);
       clearInterval(progressInterval);
       setHasError(true);
       setIsLoading(false);
       onError?.();
     };
 
+    console.log('Attempting to load image:', src.substring(0, 50) + '...');
     img.src = src;
 
     return () => {
@@ -81,15 +84,38 @@ export default function ImageWithProgress({
     <div className={`relative ${className}`}>
       {isLoading && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
-          <div className="w-full p-4">
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="text-xs text-gray-500 text-center">
-              Loading... {Math.round(progress)}%
+          <div className="flex flex-col items-center justify-center">
+            {/* Circular Progress Bar */}
+            <div className="relative w-12 h-12">
+              <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                {/* Background circle */}
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeWidth="4"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={`${progress * 1.005} 100.5`}
+                  className="transition-all duration-300 ease-out"
+                />
+              </svg>
+              {/* Percentage text */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-medium text-gray-600">
+                  {Math.round(progress)}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
