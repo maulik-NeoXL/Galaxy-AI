@@ -1,11 +1,11 @@
 "use client";
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function ChatSlugPage() {
   const router = useRouter();
-  const [isRedirecting, setIsRedirecting] = useState(true);
+  const [isRedirecting] = useState(true);
 
   useEffect(() => {
     // Redirect to the main chat page with appropriate query params

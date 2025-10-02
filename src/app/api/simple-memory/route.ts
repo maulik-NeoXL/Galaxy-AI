@@ -12,10 +12,10 @@ interface Memory {
 // In-memory storage (would use Redis/DB in production)
 let memoryStore: Memory[] = [];
 
-function generateMemory(messages: any[]): string[] {
+function generateMemory(messages: Array<{role: string, content: string}>): string[] {
   const memories: string[] = [];
   
-  messages.forEach((msg, index) => {
+  messages.forEach((msg) => {
     if (msg.role === 'user') {
       const content = msg.content.toLowerCase();
       

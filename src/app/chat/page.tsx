@@ -161,7 +161,7 @@ const ChatPage = () => {
       // Prepare messages with context
       const contextMessages = memoryContext.length > 0 
         ? [
-            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: any) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
+            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: {memory?: string, role?: string, content?: string}) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
             ...messages,
             userMessage
           ]
@@ -947,7 +947,7 @@ const ChatPage = () => {
       // Prepare messages with context
       const contextMessages = memoryContext.length > 0 
         ? [
-            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: any) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
+            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: {memory?: string, role?: string, content?: string}) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
             ...messages,
             userMessage
           ]
