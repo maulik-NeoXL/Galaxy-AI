@@ -202,16 +202,20 @@ const ChatPage = () => {
         });
       }
       
-      // Save completed conversation to MongoDB and memory
-      if (isClient) {
-        const finalMessages = [...messages, userMessage, assistantMessage];
-        saveChatToMongoDB(finalMessages, false);
-        
-        // Save to memory for AI memory
-        const memoryUserMessage = { ...userMessage, files: undefined };
-        const memoryAssistantMessage = { ...assistantMessage, files: undefined };
-        saveToMemory([memoryUserMessage, memoryAssistantMessage]);
-      }
+                // Save completed conversation to MongoDB and memory
+                if (isClient) {
+                  const finalMessages = [...messages, userMessage, assistantMessage];
+                  saveChatToMongoDB(finalMessages, false);
+
+                  // Save to memory asynchronously without blocking UI  
+                  const memoryUserMessage = { ...userMessage, files: undefined };
+                  const memoryAssistantMessage = { ...assistantMessage, files: undefined };
+                  
+                  // Don't await - let it save in background
+                  saveToMemory([memoryUserMessage, memoryAssistantMessage]).catch(err => 
+                    console.log('Memory save completed in background')
+                  );
+                }
     } catch (error) {
       console.error('Error:', error);
       toast.error(getErrorMessage(error));
@@ -714,8 +718,8 @@ const ChatPage = () => {
         setMessages([]);
       }
       
-      // Load user context from Mem0
-      await loadMemoryContext();
+      // Memory context will be loaded when needed during conversation
+      // Skipped for initial performance optimization
     } catch (error) {
       // For other errors, log and show user-friendly message
       console.error('Failed to load chat history from MongoDB:', error);
@@ -855,64 +859,48 @@ const ChatPage = () => {
   const loadMemoryContext = async () => {
     try {
       console.log('Loading memory context for user:', user?.id || 'anonymous');
-      
-      // Try Mem0 first (will return empty for cross-chat as expected)
-      const mem0Response = await fetchWithRetry('/api/mem0', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'load',
-          filters: {
-            user_id: user?.id || 'anonymous'
-          }
-        }),
-      }, {
-        maxRetries: 1,
-        baseDelay: 1000,
-        maxDelay: 2000
-      });
-      
-      const mem0Result = await mem0Response.json();
-      console.log('Mem0 load result:', mem0Result.data?.length || 0, 'memories');
-      
-      if (mem0Result.data && mem0Result.data.length > 0) {
-        console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
-        return mem0Result.data || [];
-      } else {
-        console.log('📝 Mem0 returned empty for cross-chat, trying Simple Memory...');
-        throw new Error('Mem0 empty results - expected for cross-chat');
-      }
-    } catch (mem0Error) {
-      console.log('🔄 Mem0 failed (expected for cross-chat), trying Simple Memory...');
-      
-      // Fallback to simple memory for cross-chat scenarios
-      try {
-        const simpleResponse = await fetchWithRetry('/api/simple-memory', {
+
+      // Parallel loading for better performance
+      const [mem0Response, simpleResponse] = await Promise.allSettled([
+        fetchWithRetry('/api/mem0', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'load',
+            filters: { user_id: user?.id || 'anonymous' }
+          }),
+        }, { maxRetries: 1, baseDelay: 500, maxDelay: 1000 }),
+        
+        fetchWithRetry('/api/simple-memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'load',
             userId: user?.id || 'anonymous',
           }),
-        }, {
-          maxRetries: 1,
-          baseDelay: 500,
-          maxDelay: 1000
-        });
-        
-        const simpleResult = await simpleResponse.json();
-        console.log('✅ Simple Memory loaded:', simpleResult.data?.length || 0, 'memories');
-        console.log('📊 Simple Memory data:', simpleResult.data);
-        return simpleResult.data || [];
-      } catch (error) {
-          console.error('❌ Failed to load simple memory:', error);
-          toast.error('Failed to load memory context');
-          return [];
+        }, { maxRetries: 1, baseDelay: 300, maxDelay: 800 })
+      ]);
+
+      // Process Mem0 response
+      if (mem0Response.status === 'fulfilled') {
+        const mem0Result = await mem0Response.value.json();
+        if (mem0Result.data && mem0Result.data.length > 0) {
+          console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
+          return mem0Result.data || [];
         }
+      }
+
+      // Process Simple Memory response
+      if (simpleResponse.status === 'fulfilled') {
+        const simpleResult = await simpleResponse.value.json();
+        console.log('✅ Simple Memory loaded:', simpleResult.data?.length || 0, 'memories');
+        return simpleResult.data || [];
+      }
+
+      return [];
+    } catch (error) {
+      console.error('❌ Failed to load memory context:', error);
+      return [];
     }
   };
 
@@ -1060,12 +1048,16 @@ const ChatPage = () => {
         // Only update messages, don't regenerate title
         saveChatToMongoDB(finalMessages, false);
         
-        // Save to memory for AI memory (without files for now)
-        console.log('About to save memory for user:', user?.id || 'anonymous');
-        console.log('Memory messages:', userMessage.content, assistantMessage.content);
-        const memoryUserMessage = { ...userMessage, files: undefined };
-        const memoryAssistantMessage = { ...assistantMessage, files: undefined };
-        saveToMemory([memoryUserMessage, memoryAssistantMessage]);
+                // Save to memory asynchronously without blocking UI
+                console.log('About to save memory for user:', user?.id || 'anonymous');
+                console.log('Memory messages:', userMessage.content, assistantMessage.content);
+                const memoryUserMessage = { ...userMessage, files: undefined };
+                const memoryAssistantMessage = { ...assistantMessage, files: undefined };
+                
+                // Don't await - let it save in background
+                saveToMemory([memoryUserMessage, memoryAssistantMessage]).catch(err => 
+                  console.log('Memory save completed in background')
+                );
       }
       
     } catch (error) {
