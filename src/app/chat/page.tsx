@@ -460,7 +460,7 @@ const ChatPage = () => {
               if (file.size > 2 * 1024 * 1024) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const img = new Image();
+                const img = new Image() as HTMLImageElement;
                 
                 img.onload = () => {
                   // Calculate dimensions to reduce file size
