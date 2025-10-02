@@ -154,18 +154,57 @@ const ChatPage = () => {
     setIsLoading(true);
 
     try {
-      // Load memory context for AI
-      console.log('About to load memory context for floating input');
-      const memoryContext = await loadMemoryContext();
-      
-      // Prepare messages with context
-      const contextMessages = memoryContext.length > 0 
-        ? [
-            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: {memory?: string, role?: string, content?: string}) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
-            ...messages,
-            userMessage
-          ]
-        : [...messages, userMessage];
+              // Load memory context for AI BEFORE processing
+              console.log('About to load memory context for floating input');
+              
+              // Force load memory context synchronously
+              const memoryContext = await Promise.allSettled([
+                fetch('/api/mem0', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'load',
+                    filters: { user_id: user?.id || 'anonymous' }
+                  }),
+                }),
+                fetch('/api/simple-memory', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'load',
+                    userId: user?.id || 'anonymous',
+                  }),
+                })
+              ]).then(async ([mem0Resp, simpleResp]) => {
+                // Try Simple Memory first as it's faster for cross-chat
+                if (simpleResp.status === 'fulfilled') {
+                  const simpleResult = await simpleResp.value.json();
+                  if (simpleResult.data && simpleResult.data.length > 0) {
+                    console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
+                    return simpleResult.data.map(item => ({ memory: item.memory }));
+                  }
+                }
+                
+                // Fallback to Mem0
+                if (mem0Resp.status === 'fulfilled') {
+                  const mem0Result = await mem0Resp.value.json();
+                  if (mem0Result.data && mem0Result.data.length > 0) {
+                    console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
+                    return mem0Result.data || [];
+                  }
+                }
+                
+                return [];
+              });
+              
+              // Prepare messages with context
+              const contextMessages = memoryContext.length > 0
+                ? [
+                    { role: 'system', content: `Previous conversation context:\n${memoryContext.map((m: {memory?: string, role?: string, content?: string}) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
+                    ...messages,
+                    userMessage
+                  ]
+                : [...messages, userMessage];
       
       console.log('Floating input context messages:', contextMessages);
 
@@ -991,17 +1030,58 @@ const ChatPage = () => {
     }
 
     try {
-      // Load memory context for AI
+      // Load memory context for AI BEFORE processing
       console.log('About to load memory context for user:', user?.id || 'anonymous');
-      const memoryContext = await loadMemoryContext();
+      
+      // Force load memory context synchronously
+      const memoryContext = await Promise.allSettled([
+        fetch('/api/mem0', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'load',
+            filters: { user_id: user?.id || 'anonymous' }
+          }),
+        }),
+        fetch('/api/simple-memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'load',
+            userId: user?.id || 'anonymous',
+          }),
+        })
+      ]).then(async ([mem0Resp, simpleResp]) => {
+        // Try Simple Memory first as it's faster for cross-chat
+        if (simpleResp.status === 'fulfilled') {
+          const simpleResult = await simpleResp.value.json();
+          if (simpleResult.data && simpleResult.data.length > 0) {
+            console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
+            console.log('📊 Simple Memory data:', simpleResult.data);
+            return simpleResult.data.map(item => ({ memory: item.memory }));
+          }
+        }
+        
+        // Fallback to Mem0
+        if (mem0Resp.status === 'fulfilled') {
+          const mem0Result = await mem0Resp.value.json();
+          if (mem0Result.data && mem0Result.data.length > 0) {
+            console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
+            return mem0Result.data || [];
+          }
+        }
+        
+        return [];
+      });
+
       console.log('Using memory context:', memoryContext);
       console.log('Context messages count:', memoryContext.length);
       console.log('Memory context details:', memoryContext.map((m: {memory?: string}) => m.memory || 'No memory'));
-      
+
       // Prepare messages with context
-      const contextMessages = memoryContext.length > 0 
+      const contextMessages = memoryContext.length > 0
         ? [
-            { role: 'system', content: `Previous conversation context: ${memoryContext.map((m: {memory?: string, role?: string, content?: string}) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
+            { role: 'system', content: `Previous conversation context:\n${memoryContext.map((m: {memory?: string, role?: string, content?: string}) => m.memory || `${m.role}: ${m.content}`).join('\n')}` },
             ...messages,
             userMessage
           ]
