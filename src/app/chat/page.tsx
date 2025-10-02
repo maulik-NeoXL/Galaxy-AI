@@ -319,10 +319,10 @@ const ChatPage = () => {
 
   // Update document title and URL based on chat title
   useEffect(() => {
-    if (isClient && chatId) {
+    if (mounted && isClient && chatId) { // Add mounted check to prevent hydration mismatch
       if (displayedTitle && displayedTitle !== 'GPT-3.5 Turbo' && displayedTitle !== 'New chat') {
         // Update document title to include chat title
-        document.title = `${displayedTitle} - Chat`;
+        document.title = `${displayedTitle} - AI Chat`;
         
         // Update URL to include chat title in path
         const chatTitlePath = displayedTitle
@@ -339,15 +339,15 @@ const ChatPage = () => {
           window.history.replaceState({}, '', newPath);
         }
       } else {
-        // Fallback to simple localhost title  
-        document.title = "localhost";
+        // Fallback to proper AI Chat title  
+        document.title = "AI Chat";
         // Also ensure we're on a clean /chat URL for basic chats
         if (window.location.pathname !== '/chat') {
           window.history.replaceState({}, '', '/chat');
         }
       }
     }
-  }, [displayedTitle, chatId, isClient]);
+  }, [displayedTitle, chatId, isClient, mounted]); // Add mounted dependency
 
   // Redirect to sign-up if not authenticated
   useEffect(() => {

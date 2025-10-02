@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "localhost",
+  title: "AI Chat",
   description: "AI-powered chat assistant",
   icons: {
     icon: '/favicon.svg',
