@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         console.log('Saving messages:', messages);
         console.log('User ID:', userId);
         console.log('Run ID:', runId);
-        console.log('Message format:', messages.map(m => ({ role: m.role, contentLength: m.content.length })));
+        console.log('Message format:', messages.map((m: {role: string, content: string}) => ({ role: m.role, contentLength: m.content.length })));
         
         try {
           const response = await client.add(messages, {
