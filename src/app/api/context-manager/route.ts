@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 // Helper function to load user memories
 async function loadUserMemories(userId: string, chatId: string) {
   try {
-    const response = await fetch(`${request.nextUrl.origin}/api/simple-memory`, {
+    const response = await fetch(`/api/simple-memory`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
