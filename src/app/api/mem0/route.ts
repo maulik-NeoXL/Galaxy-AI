@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MemoryClient } from 'mem0ai';
 
-const client = new MemoryClient({
-  apiKey: process.env.MEM0_API_KEY || ''
-});
+const client = process.env.MEM0_API_KEY 
+  ? new MemoryClient({
+      apiKey: process.env.MEM0_API_KEY
+    })
+  : null;
 
 export async function POST(request: NextRequest) {
   console.log('=== MEM0 API ROUTE HIT ===');
+  
+  if (!client) {
+    console.log('⚠️ Mem0 client not initialized - missing MEM0_API_KEY');
+    return NextResponse.json({
+      success: false,
+      error: 'Mem0 not configured - missing API key',
+      data: []
+    });
+  }
+  
   try {
     const { action, messages, userId, runId, filters } = await request.json();
     console.log('Request body:', { action, messages, userId, runId, filters });
