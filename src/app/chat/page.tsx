@@ -942,7 +942,7 @@ const ChatPage = () => {
       const memoryContext = await loadMemoryContext();
       console.log('Using memory context:', memoryContext);
       console.log('Context messages count:', memoryContext.length);
-      console.log('Memory context details:', memoryContext.map(m => m.memory || 'No memory'));
+      console.log('Memory context details:', memoryContext.map((m: {memory?: string}) => m.memory || 'No memory'));
       
       // Prepare messages with context
       const contextMessages = memoryContext.length > 0 
