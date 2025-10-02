@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         console.log('Filter type:', typeof filters);
         console.log('Filter keys:', Object.keys(filters || {}));
         
-        let memories;
+        let memories: any[] = [];
         try {
           const searchFilters = filters || {};
           
