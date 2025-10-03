@@ -53,6 +53,15 @@ import { toast } from 'sonner';
 import { fetchWithRetry, getErrorMessage } from "@/lib/network-utils";
 import { cache, CACHE_KEYS } from '@/lib/cache';
 
+interface ChatItem {
+  id: string;
+  title: string;
+  displayedTitle: string;
+  isTypingTitle: boolean;
+  timestamp: number;
+  preview: string;
+}
+
 const mainItems = [
   {
     title: "New chat",
@@ -152,7 +161,7 @@ const AppSidebar = () => {
     const cacheKey = CACHE_KEYS.CHAT_LIST(userId);
     
     // Check cache first
-    const cachedChats = cache.get(cacheKey);
+    const cachedChats = cache.get<ChatItem[]>(cacheKey);
     if (cachedChats) {
       console.log('📦 Using cached chat list');
       setChatItems(cachedChats);
