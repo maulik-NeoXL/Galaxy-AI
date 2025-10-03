@@ -5,9 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { SiOpenai } from 'react-icons/si';
+import { useEffect, useState } from 'react';
 
 export default function SignInPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
       <div className="min-h-screen flex bg-white">
@@ -80,56 +86,64 @@ export default function SignInPage() {
 
           {/* Sign-in Form */}
           <div className="space-y-6">
-            <SignIn 
-              forceRedirectUrl="/chat"
-              appearance={{
-                elements: {
-                  rootBox: 'w-full',
-                  card: 'shadow-none border-none bg-transparent p-0 flex flex-col items-center text-center',
-                  headerTitle: 'hidden',
-                  headerSubtitle: 'hidden',
-                  socialButtonsBlockContainer: 'space-y-3',
-                  socialButtonsBlockButton: 'w-full justify-center border-gray-200 hover:bg-gray-50 transition-colors h-11 text-sm font-medium border',
-                  socialButtonsBlockButtonText: 'text-gray-700',
-                  dividerLine: 'bg-gray-200',
-                  dividerText: 'text-gray-400 text-sm bg-white px-4',
-                  formFieldLabel: 'text-sm font-medium text-gray-700 mb-2',
-                  formFieldInputWrapper: 'mb-4',
-                  formFieldInput: 'border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-2 rounded-lg h-11 transition-colors',
-                  formButtonPrimary: 'w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium h-11 transition-colors',
-                  footerActionLink: 'text-blue-600 hover:text-blue-700 text-sm transition-colors',
-                  formFieldErrorText: 'text-red-500 text-sm mt-1',
-                  formFieldError: 'text-red-500',
-                  alertText: 'text-sm',
-                  identityInputText: 'border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-2 rounded-lg h-11',
-                  formFieldError__credentials: 'text-red-500 text-sm',
-                  formFieldInputShowPasswordButton: 'text-gray-400 hover:text-gray-600',
-                  formFieldInputShowPasswordIcon: 'w-4 h-4',
-                  footer: 'mt-6 text-center',
-                  footerAction: 'text-sm',
-                  footerActionText: 'text-gray-600 text-sm',
-                  footerActionText__signUp: 'text-sm',
-                  footerActionText__signIn: 'text-sm',
-                  footerActionLink__signUp: 'text-blue-600 hover:text-blue-700 text-sm font-medium',
-                  footerActionLink__signIn: 'text-blue-600 hover:text-blue-700 text-sm font-medium',
-                },
-                layout: {
-                  socialButtonsPlacement: 'top',
-                },
-                variables: {
-                  colorPrimary: '#111827',
-                  colorBackground: '#ffffff',
-                  colorText: '#111827',
-                  colorTextSecondary: '#6b7280',
-                  colorInputBackground: '#ffffff',
-                  colorInputText: '#111827',
-                  colorDanger: '#EF4444',
-                  borderRadius: '8px',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                  fontSize: '14px',
-                }
-              }}
-            />
+            {mounted && (
+              <SignIn 
+                forceRedirectUrl="/chat"
+                appearance={{
+                  elements: {
+                    rootBox: 'w-full',
+                    card: 'shadow-none border-none bg-transparent p-0 flex flex-col items-center text-center',
+                    headerTitle: 'hidden',
+                    headerSubtitle: 'hidden',
+                    socialButtonsBlockContainer: 'space-y-3',
+                    socialButtonsBlockButton: 'w-full justify-center border-gray-200 hover:bg-gray-50 transition-colors h-11 text-sm font-medium border',
+                    socialButtonsBlockButtonText: 'text-gray-700',
+                    dividerLine: 'bg-gray-200',
+                    dividerText: 'text-gray-400 text-sm bg-white px-4',
+                    formFieldLabel: 'text-sm font-medium text-gray-700 mb-2',
+                    formFieldInputWrapper: 'mb-4',
+                    formFieldInput: 'border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-2 rounded-lg h-11 transition-colors',
+                    formButtonPrimary: 'w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium h-11 transition-colors',
+                    footerActionLink: 'text-blue-600 hover:text-blue-700 text-sm transition-colors',
+                    formFieldErrorText: 'text-red-500 text-sm mt-1',
+                    formFieldError: 'text-red-500',
+                    alertText: 'text-sm',
+                    identityInputText: 'border-gray-200 focus:border-blue-500 focus:ring-blue-500 focus:ring-2 rounded-lg h-11',
+                    formFieldError__credentials: 'text-red-500 text-sm',
+                    formFieldInputShowPasswordButton: 'text-gray-400 hover:text-gray-600',
+                    formFieldInputShowPasswordIcon: 'w-4 h-4',
+                    footer: 'mt-6 text-center',
+                    footerAction: 'text-sm',
+                    footerActionText: 'text-gray-600 text-sm',
+                    footerActionText__signUp: 'text-sm',
+                    footerActionText__signIn: 'text-sm',
+                    footerActionLink__signUp: 'text-blue-600 hover:text-blue-700 text-sm font-medium',
+                    footerActionLink__signIn: 'text-blue-600 hover:text-blue-700 text-sm font-medium',
+                  },
+                  layout: {
+                    socialButtonsPlacement: 'top',
+                  },
+                  variables: {
+                    colorPrimary: '#111827',
+                    colorBackground: '#ffffff',
+                    colorText: '#111827',
+                    colorTextSecondary: '#6b7280',
+                    colorInputBackground: '#ffffff',
+                    colorInputText: '#111827',
+                    colorDanger: '#EF4444',
+                    borderRadius: '8px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    fontSize: '14px',
+                  }
+                }}
+              />
+            )}
+            
+            {!mounted && (
+              <div className="w-full h-32 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            )}
 
             {/* Sign up prompt */}
             <div className="text-center pt-4">

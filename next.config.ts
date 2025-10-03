@@ -47,23 +47,24 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.com https://clerk.galaxy-ai.vercel.app",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://api.openai.com https://generativelanguage.googleapis.com https://api.x.ai https://api.mem0.ai https://api.cloudinary.com https://clerk.com https://clerk.galaxy-ai.vercel.app",
-              "frame-src 'self' https://clerk.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              "upgrade-insecure-requests"
-            ].join('; '),
-          },
+          // Temporarily disable CSP to debug Clerk issue
+          // {
+          //   key: 'Content-Security-Policy',
+          //   value: [
+          //     "default-src 'self'",
+          //     "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.com https://clerk.galaxy-ai.vercel.app https://*.clerk.accounts.dev https://*.clerk.dev",
+          //     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          //     "font-src 'self' https://fonts.gstatic.com",
+          //     "img-src 'self' data: https: blob:",
+          //     "connect-src 'self' https://api.openai.com https://generativelanguage.googleapis.com https://api.x.ai https://api.mem0.ai https://api.cloudinary.com https://clerk.com https://clerk.galaxy-ai.vercel.app https://*.clerk.accounts.dev https://*.clerk.dev",
+          //     "frame-src 'self' https://clerk.com https://*.clerk.accounts.dev https://*.clerk.dev",
+          //     "object-src 'none'",
+          //     "base-uri 'self'",
+          //     "form-action 'self'",
+          //     "frame-ancestors 'none'",
+          //     "upgrade-insecure-requests"
+          //   ].join('; '),
+          // },
         ],
       },
     ];
