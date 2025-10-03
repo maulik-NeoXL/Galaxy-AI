@@ -115,7 +115,6 @@ export default function SignInPage() {
                 },
                 layout: {
                   socialButtonsPlacement: 'top',
-                  socialButtonsSpacing: 'repeated',
                 },
                 variables: {
                   colorPrimary: '#111827',
