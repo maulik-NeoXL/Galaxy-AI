@@ -25,11 +25,32 @@ export async function GET(request: NextRequest) {
     }
     
     if (userId) {
-      // Get all chats for user
+      // Get chats for user with pagination and optimized field selection
+      const page = parseInt(searchParams.get('page') || '1');
+      const limit = parseInt(searchParams.get('limit') || '20');
+      const skip = (page - 1) * limit;
+      
+      // Only select essential fields for chat list - exclude full messages for performance
       const chats = await Chat.find({ userId })
         .sort({ timestamp: -1 })
-        .select('chatId title timestamp messages');
-      return NextResponse.json(chats);
+        .skip(skip)
+        .limit(limit)
+        .select('chatId title timestamp messages.0 messages.-1'); // Only first and last message
+      
+      // Get total count for pagination
+      const totalCount = await Chat.countDocuments({ userId });
+      
+      return NextResponse.json({
+        chats,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNext: page * limit < totalCount,
+          hasPrev: page > 1
+        }
+      });
     }
     
     return NextResponse.json({ error: 'Missing userId or chatId' }, { status: 400 });

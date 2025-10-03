@@ -1048,46 +1048,49 @@ const ChatPage = () => {
       // Load memory context for AI BEFORE processing
       console.log('About to load memory context for user:', user?.id || 'anonymous');
       
-      // Force load memory context synchronously
-      const memoryContext = await Promise.allSettled([
-        fetch('/api/mem0', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'load',
-            filters: { user_id: user?.id || 'anonymous' }
+      // Load memory context with timeout and parallel requests
+      const memoryTimeout = 3000; // 3 second timeout
+      const memoryContext = await Promise.race([
+        Promise.allSettled([
+          fetch('/api/mem0', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'load',
+              filters: { user_id: user?.id || 'anonymous' }
+            }),
           }),
+          fetch('/api/simple-memory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'load',
+              userId: user?.id || 'anonymous',
+            }),
+          })
+        ]).then(async ([mem0Resp, simpleResp]) => {
+          // Try Simple Memory first as it's faster for cross-chat
+          if (simpleResp.status === 'fulfilled') {
+            const simpleResult = await simpleResp.value.json();
+            if (simpleResult.data && simpleResult.data.length > 0) {
+              console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
+              return simpleResult.data.map((item: {memory: string}) => ({ memory: item.memory }));
+            }
+          }
+          
+          // Fallback to Mem0
+          if (mem0Resp.status === 'fulfilled') {
+            const mem0Result = await mem0Resp.value.json();
+            if (mem0Result.data && mem0Result.data.length > 0) {
+              console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
+              return mem0Result.data || [];
+            }
+          }
+          
+          return [];
         }),
-        fetch('/api/simple-memory', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'load',
-            userId: user?.id || 'anonymous',
-          }),
-        })
-      ]).then(async ([mem0Resp, simpleResp]) => {
-        // Try Simple Memory first as it's faster for cross-chat
-        if (simpleResp.status === 'fulfilled') {
-          const simpleResult = await simpleResp.value.json();
-          if (simpleResult.data && simpleResult.data.length > 0) {
-            console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
-            console.log('📊 Simple Memory data:', simpleResult.data);
-            return simpleResult.data.map((item: any) => ({ memory: item.memory }));
-          }
-        }
-        
-        // Fallback to Mem0
-        if (mem0Resp.status === 'fulfilled') {
-          const mem0Result = await mem0Resp.value.json();
-          if (mem0Result.data && mem0Result.data.length > 0) {
-            console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
-            return mem0Result.data || [];
-          }
-        }
-        
-        return [];
-      });
+        new Promise(resolve => setTimeout(() => resolve([]), memoryTimeout))
+      ]) as any[];
 
       console.log('Using memory context:', memoryContext);
       console.log('Context messages count:', memoryContext.length);

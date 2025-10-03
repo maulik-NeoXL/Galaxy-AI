@@ -51,6 +51,7 @@ import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchWithRetry, getErrorMessage } from "@/lib/network-utils";
+import { cache, CACHE_KEYS } from '@/lib/cache';
 
 const mainItems = [
   {
@@ -143,21 +144,33 @@ const AppSidebar = () => {
     { name: 'Health', icon: FaHeartbeat, color: 'bg-red-500' }
   ];
 
-  // Load chat items from MongoDB
+  // Load chat items from MongoDB with caching
   const loadChatItems = useCallback(async () => {
     if (!isClient) return;
     
+    const userId = user?.id || 'anonymous';
+    const cacheKey = CACHE_KEYS.CHAT_LIST(userId);
+    
+    // Check cache first
+    const cachedChats = cache.get(cacheKey);
+    if (cachedChats) {
+      console.log('📦 Using cached chat list');
+      setChatItems(cachedChats);
+      return;
+    }
+    
     try {
-      const response = await fetchWithRetry(`/api/chats?userId=${user?.id || 'anonymous'}`, {}, {
+      const response = await fetchWithRetry(`/api/chats?userId=${userId}&limit=50`, {}, {
         maxRetries: 2,
-        baseDelay: 1000,
-        maxDelay: 3000
+        baseDelay: 500, // Reduced delay
+        maxDelay: 2000  // Reduced max delay
       });
       
-      const chats = await response.json();
+      const data = await response.json();
+      const chats = data.chats || data; // Handle both paginated and non-paginated responses
       
       // Quick title processing without database updates for performance
-      const processedChats = chats.map((chat: { chatId: string; title: string; updatedAt: string; messages: { role: string; content: string }[] }) => {
+      const processedChats = chats.map((chat: { chatId: string; title: string; timestamp: number; messages: { role: string; content: string }[] }) => {
         let newTitle = chat.title;
         
         // Quick fix for invalid titles without database updates
@@ -175,7 +188,7 @@ const AppSidebar = () => {
           title: newTitle || 'New chat',
           displayedTitle: newTitle || 'New chat',
           isTypingTitle: false,
-          timestamp: new Date(chat.updatedAt).getTime(),
+          timestamp: chat.timestamp || Date.now(),
           preview: chat.messages && chat.messages.length > 0 
             ? chat.messages[chat.messages.length - 1].content.substring(0, 50) + (chat.messages[chat.messages.length - 1].content.length > 50 ? '...' : '')
             : ''
@@ -183,11 +196,25 @@ const AppSidebar = () => {
       });
       
       setChatItems(processedChats);
+      
+      // Cache the processed chats for 2 minutes
+      cache.set(cacheKey, processedChats, 2 * 60 * 1000);
+      console.log('💾 Cached chat list');
+      
     } catch (error) {
       console.error('Error loading chat items:', error);
       toast.error(getErrorMessage(error));
     }
   }, [isClient, user?.id]);
+
+  // Function to invalidate chat cache
+  const invalidateChatCache = useCallback(() => {
+    if (user?.id) {
+      const cacheKey = CACHE_KEYS.CHAT_LIST(user.id);
+      cache.delete(cacheKey);
+      console.log('🗑️ Invalidated chat cache');
+    }
+  }, [user?.id]);
 
   // Set client state and load chats on mount
   useEffect(() => {
