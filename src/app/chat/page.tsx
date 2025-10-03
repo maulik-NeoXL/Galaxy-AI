@@ -94,17 +94,19 @@ const ChatPage = () => {
   }
 
   const models = [
-    { name: 'GPT-3.5 Turbo', logo: SiOpenai },
-    { name: 'GPT-4', logo: SiOpenai },
-    { name: 'GPT-4 Turbo', logo: SiOpenai },
-    { name: 'GPT-4o', logo: SiOpenai },
-    { name: 'GPT-4o Mini', logo: SiOpenai },
-    { name: 'Gemini Pro', logo: RiGeminiFill },
-    { name: 'Gemini Pro Vision', logo: RiGeminiFill },
-    { name: 'Gemini 1.5 Pro', logo: RiGeminiFill },
-    { name: 'Gemini 1.5 Flash', logo: RiGeminiFill },
-    { name: 'Grok-1', logo: SiX },
-    { name: 'Grok-2', logo: SiX }
+    { name: 'GPT-3.5 Turbo', logo: SiOpenai, type: 'text' },
+    { name: 'GPT-4', logo: SiOpenai, type: 'text' },
+    { name: 'GPT-4 Turbo', logo: SiOpenai, type: 'text' },
+    { name: 'GPT-4o', logo: SiOpenai, type: 'text' },
+    { name: 'GPT-4o Mini', logo: SiOpenai, type: 'text' },
+    { name: 'Gemini Pro', logo: RiGeminiFill, type: 'text' },
+    { name: 'Gemini Pro Vision', logo: RiGeminiFill, type: 'text' },
+    { name: 'Gemini 1.5 Pro', logo: RiGeminiFill, type: 'text' },
+    { name: 'Gemini 1.5 Flash', logo: RiGeminiFill, type: 'text' },
+    { name: 'Grok-1', logo: SiX, type: 'text' },
+    { name: 'Grok-2', logo: SiX, type: 'text' },
+    { name: 'DALL-E 3', logo: SiOpenai, type: 'image' },
+    { name: 'DALL-E 2', logo: SiOpenai, type: 'image' }
   ];
 
   const scrollToBottom = () => {

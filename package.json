@@ -373,12 +373,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "analyze": "ANALYZE=true npm run build",
+    "build:analyze": "ANALYZE=true next build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.4",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.14",
     "@types/react-syntax-highlighter": "^15.5.13"
