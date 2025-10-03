@@ -114,7 +114,6 @@ export default function SignUpPage() {
                 },
                 layout: {
                   socialButtonsPlacement: 'top',
-                  socialButtonsSpacing: 'repeated',
                 },
                 variables: {
                   colorPrimary: '#111827',
