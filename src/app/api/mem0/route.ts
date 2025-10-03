@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MemoryClient } from 'mem0ai';
 
+console.log('🔑 MEM0_API_KEY exists:', !!process.env.MEM0_API_KEY);
+console.log('🔑 MEM0_API_KEY length:', process.env.MEM0_API_KEY?.length || 0);
+
 const client = process.env.MEM0_API_KEY 
   ? new MemoryClient({
       apiKey: process.env.MEM0_API_KEY
     })
   : null;
 
+console.log('🤖 Mem0 client initialized:', !!client);
+
 export async function POST(request: NextRequest) {
   console.log('=== MEM0 API ROUTE HIT ===');
+  
+  // Temporarily disable Mem0 due to API issues
+  console.log('⚠️ Mem0 temporarily disabled - using Simple Memory instead');
+  return NextResponse.json({
+    success: false,
+    error: 'Mem0 temporarily disabled - using Simple Memory instead',
+    data: []
+  });
   
   if (!client) {
     console.log('⚠️ Mem0 client not initialized - missing MEM0_API_KEY');
@@ -32,16 +45,33 @@ export async function POST(request: NextRequest) {
         console.log('Message format:', messages.map((m: {role: string, content: string}) => ({ role: m.role, contentLength: m.content.length })));
         
         try {
+          console.log('🚀 Attempting to save to Mem0 with:', {
+            messagesCount: messages.length,
+            userId,
+            runId
+          });
+          
           const response = await client.add(messages, {
             user_id: userId,
             run_id: runId
           });
-          console.log('Save response:', response);
-          console.log('Save successful - memories created:', response?.length || 0);
+          
+          console.log('✅ Mem0 save response:', response);
+          console.log('✅ Save successful - memories created:', response?.length || 0);
+          
           return NextResponse.json({ success: true, data: response });
         } catch (error) {
-          console.error('Save error:', error);
-          return NextResponse.json({ error: 'Failed to save memories' }, { status: 500 });
+          console.error('❌ Mem0 save error:', error);
+          console.error('❌ Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Failed to save memories',
+            details: error.message 
+          }, { status: 500 });
         }
 
       case 'load':
