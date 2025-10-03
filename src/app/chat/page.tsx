@@ -78,7 +78,7 @@ const ChatPage = () => {
   // NEW: Update context usage calculation
   function updateContextUsage(messagesToCheck: Array<{role: string; content: string}>, model: string) {
     const tokens = estimateTokens(messagesToCheck.map(msg => ({
-      role: msg.role,
+      role: msg.role as "user" | "assistant" | "system",
       content: msg.content
     })));
     const limit = getModelLimit(model);
@@ -213,7 +213,7 @@ const ChatPage = () => {
                   const simpleResult = await simpleResp.value.json();
                   if (simpleResult.data && simpleResult.data.length > 0) {
                     console.log('✅ Using Simple Memory context:', simpleResult.data.length, 'memories');
-                    return simpleResult.data.map((item: any) => ({ memory: item.memory }));
+                    return simpleResult.data.map((item: {memory: string}) => ({ memory: item.memory }));
                   }
                 }
                 
@@ -285,7 +285,7 @@ const ChatPage = () => {
                   const memoryAssistantMessage = { ...assistantMessage, files: undefined };
                   
                   // Don't await - let it save in background
-                  saveToMemory([memoryUserMessage, memoryAssistantMessage]).catch(err => 
+                  saveToMemory([memoryUserMessage, memoryAssistantMessage]).catch(() => 
                     console.log('Memory save completed in background')
                   );
                 }
@@ -351,6 +351,7 @@ const ChatPage = () => {
     updateContextUsage(messages, selectedModel);
     
     // UploadCare initialization removed - using native file input instead
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update document title and URL based on chat title
@@ -443,6 +444,7 @@ const ChatPage = () => {
       }
       return prevChatId;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isClient]);
 
   // Load chat history from localStorage on component mount
@@ -450,6 +452,7 @@ const ChatPage = () => {
     if (isClient && chatId) {
       loadChatHistory();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient, chatId]);
 
   // Listen for clearChatContent event from sidebar
@@ -546,7 +549,7 @@ const ChatPage = () => {
               if (file.size > 2 * 1024 * 1024) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const img = new Image();
+                const img = new (window as any).Image();
                 
                 img.onload = () => {
                   // Calculate dimensions to reduce file size
@@ -952,53 +955,6 @@ const ChatPage = () => {
     }
   };
 
-  const loadMemoryContext = async () => {
-    try {
-      console.log('Loading memory context for user:', user?.id || 'anonymous');
-
-      // Parallel loading for better performance
-      const [mem0Response, simpleResponse] = await Promise.allSettled([
-        fetchWithRetry('/api/mem0', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'load',
-            filters: { user_id: user?.id || 'anonymous' }
-          }),
-        }, { maxRetries: 1, baseDelay: 500, maxDelay: 1000 }),
-        
-        fetchWithRetry('/api/simple-memory', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'load',
-            userId: user?.id || 'anonymous',
-          }),
-        }, { maxRetries: 1, baseDelay: 300, maxDelay: 800 })
-      ]);
-
-      // Process Mem0 response
-      if (mem0Response.status === 'fulfilled') {
-        const mem0Result = await mem0Response.value.json();
-        if (mem0Result.data && mem0Result.data.length > 0) {
-          console.log('✅ Using Mem0 context:', mem0Result.data.length, 'memories');
-          return mem0Result.data || [];
-        }
-      }
-
-      // Process Simple Memory response
-      if (simpleResponse.status === 'fulfilled') {
-        const simpleResult = await simpleResponse.value.json();
-        console.log('✅ Simple Memory loaded:', simpleResult.data?.length || 0, 'memories');
-        return simpleResult.data || [];
-      }
-
-      return [];
-    } catch (error) {
-      console.error('❌ Failed to load memory context:', error);
-      return [];
-    }
-  };
 
   const handleNewChat = () => {
     setMessages([]);
@@ -1194,7 +1150,7 @@ const ChatPage = () => {
                 const memoryAssistantMessage = { ...assistantMessage, files: undefined };
                 
                 // Don't await - let it save in background
-                saveToMemory([memoryUserMessage, memoryAssistantMessage]).catch(err => 
+                saveToMemory([memoryUserMessage, memoryAssistantMessage]).catch(() => 
                   console.log('Memory save completed in background')
                 );
       }
