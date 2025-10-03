@@ -53,15 +53,6 @@ import { toast } from 'sonner';
 import { fetchWithRetry, getErrorMessage } from "@/lib/network-utils";
 import { cache, CACHE_KEYS } from '@/lib/cache';
 
-interface ChatItem {
-  id: string;
-  title: string;
-  displayedTitle: string;
-  isTypingTitle: boolean;
-  timestamp: number;
-  preview: string;
-}
-
 const mainItems = [
   {
     title: "New chat",
