@@ -1,27 +1,21 @@
 {
-  "name": "Galaxy AI - Multi-Model AI Chat Assistant",
+  "name": "Galaxy AI",
   "short_name": "Galaxy AI",
-  "description": "Experience AI at its finest with Galaxy AI. Chat with GPT-4, Gemini Pro, Grok, and more.",
+  "description": "Multi-Model AI Chat Assistant with Image Generation",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/favicon.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/favicon.png", 
+      "src": "/favicon.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
-  ],
-  "categories": ["productivity", "utilities", "social"],
-  "lang": "en",
-  "dir": "ltr"
+  ]
 }

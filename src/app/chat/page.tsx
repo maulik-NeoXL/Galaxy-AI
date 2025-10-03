@@ -816,6 +816,7 @@ const ChatPage = () => {
         }
       } else {
         // 404 response (new chat) - silently handle
+        console.log('Chat not found in database, treating as new chat:', chatId);
         setMessages([]);
       }
       
@@ -824,7 +825,10 @@ const ChatPage = () => {
     } catch (error) {
       // For other errors, log and show user-friendly message
       console.error('Failed to load chat history from MongoDB:', error);
-      toast.error(getErrorMessage(error));
+      // Don't show error toast for 404s - they're expected for new chats
+      if (!getErrorMessage(error).includes('404')) {
+        toast.error(getErrorMessage(error));
+      }
     }
   };
 

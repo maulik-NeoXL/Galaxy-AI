@@ -176,10 +176,19 @@ const AppSidebar = () => {
         // Quick fix for invalid titles without database updates
         if (!chat.title || chat.title === 'GPT-3.5 Turbo' || chat.title === 'New chat') {
           if (chat.messages && chat.messages.length > 0) {
-            const firstUserMessage = chat.messages.find(msg => msg.role === 'user');
+            const firstUserMessage = chat.messages.find(msg => msg && msg.role === 'user' && msg.content);
             if (firstUserMessage) {
               newTitle = firstUserMessage.content.substring(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '');
             }
+          }
+        }
+        
+        // Safe preview generation
+        let preview = '';
+        if (chat.messages && chat.messages.length > 0) {
+          const lastMessage = chat.messages[chat.messages.length - 1];
+          if (lastMessage && lastMessage.content) {
+            preview = lastMessage.content.substring(0, 50) + (lastMessage.content.length > 50 ? '...' : '');
           }
         }
         
@@ -189,9 +198,7 @@ const AppSidebar = () => {
           displayedTitle: newTitle || 'New chat',
           isTypingTitle: false,
           timestamp: chat.timestamp || Date.now(),
-          preview: chat.messages && chat.messages.length > 0 
-            ? chat.messages[chat.messages.length - 1].content.substring(0, 50) + (chat.messages[chat.messages.length - 1].content.length > 50 ? '...' : '')
-            : ''
+          preview
         };
       });
       

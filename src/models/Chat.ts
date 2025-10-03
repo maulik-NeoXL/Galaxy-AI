@@ -36,7 +36,6 @@ const ChatSchema = new Schema<IChat>({
 
 // Add indexes for better query performance
 ChatSchema.index({ userId: 1, timestamp: -1 }); // For user chat history queries
-ChatSchema.index({ chatId: 1 }); // For specific chat lookups
-ChatSchema.index({ userId: 1 }); // For user-based queries
+// Note: chatId already has unique: true which creates an index automatically
 
 export default mongoose.models.Chat || mongoose.model<IChat>('Chat', ChatSchema);
