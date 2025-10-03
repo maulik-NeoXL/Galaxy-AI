@@ -557,7 +557,7 @@ const AppSidebar = () => {
           <div className="flex-1 overflow-hidden">
             <SidebarGroup className="px-2 h-full flex flex-col">
               <SidebarGroupLabel className="text-muted-foreground px-2 py-2 flex-shrink-0" style={{ fontSize: '14px' }}>Chats</SidebarGroupLabel>
-              <SidebarGroupContent className={`pt-2 flex-1 ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}>
+              <SidebarGroupContent className={`pt-2 flex-1 ${state === "expanded" ? "overflow-y-auto scrollbar-hide" : "overflow-hidden"}`}>
                 <SidebarMenu className="flex flex-col gap-0">
                   {chatItems.map((chat) => {
                     const currentChatId = searchParams.get('chatId');
