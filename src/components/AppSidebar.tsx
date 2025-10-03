@@ -574,9 +574,9 @@ const AppSidebar = () => {
                     return (
                       <SidebarMenuItem key={chat.id}>
                         <div className={`group/chat-item relative px-2 transition-all duration-200 flex items-center justify-between cursor-pointer rounded-md ${
-                          isActive
+                          isActive && state === "expanded"
                             ? 'bg-gray-200' 
-                            : 'hover:bg-gray-100'
+                            : state === "expanded" ? 'hover:bg-gray-100' : 'hover:bg-gray-50'
                         }`} style={{ paddingTop: '6px', paddingBottom: '6px' }}>
                           <div 
                             className="flex-1 cursor-pointer" 
