@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
               run_id: runId
             });
             console.log('✅ Individual message approach response:', response);
-          } catch (individualError) {
+          } catch (individualError: any) {
             console.log('❌ Individual message approach failed:', individualError.message);
             
             // Approach 2: Try with concatenated content
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
                 run_id: runId
               });
               console.log('✅ Concatenated content approach response:', response);
-            } catch (concatenatedError) {
+            } catch (concatenatedError: any) {
               console.log('❌ Concatenated content approach failed:', concatenatedError.message);
               
               // Approach 3: Try with just user messages
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
                   response = [];
                   console.log('⚠️ No user messages to save');
                 }
-              } catch (userOnlyError) {
+              } catch (userOnlyError: any) {
                 console.log('❌ User messages only approach failed:', userOnlyError.message);
                 throw userOnlyError;
               }
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
               console.log('🔄 Trying to get all memories for user...');
               memories = await client.getAll({ user_id: searchFilters.user_id });
               console.log('✅ User memories approach response:', memories);
-            } catch (userError) {
+            } catch (userError: any) {
               console.log('❌ User memories approach failed:', userError.message);
               
               try {
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
                 console.log('🔄 Trying search approach...');
                 memories = await client.search('', { user_id: searchFilters.user_id });
                 console.log('✅ Search approach response:', memories);
-              } catch (searchError) {
+              } catch (searchError: any) {
                 console.log('❌ Search approach failed:', searchError.message);
                 
                 // Approach 3: Try without filters
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
                   console.log('🔄 Trying without filters...');
                   memories = await client.getAll();
                   console.log('✅ No filters approach response:', memories);
-                } catch (noFiltersError) {
+                } catch (noFiltersError: any) {
                   console.log('❌ No filters approach failed:', noFiltersError.message);
                   memories = [];
                   console.log('Cross-chat memory not supported by Mem0 - use simple memory instead');
