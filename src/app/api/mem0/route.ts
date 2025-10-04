@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           // Try different approaches to save memories
           let response: any[] = [];
           
-          // Approach 1: Try with individual messages
+          // Approach 1: Try with individual messages using new API format
           try {
             console.log('🔄 Trying individual message approach...');
             response = await client.add(messages, {
@@ -57,17 +57,17 @@ export async function POST(request: NextRequest) {
           } catch (individualError: any) {
             console.log('❌ Individual message approach failed:', individualError.message);
             
-            // Approach 2: Try with concatenated content
+            // Approach 2: Try with single content string
             try {
-              console.log('🔄 Trying concatenated content approach...');
-              const concatenatedContent = messages.map((m: {role: string, content: string}) => `${m.role}: ${m.content}`).join('\n');
-              response = await client.add([{ role: 'user', content: concatenatedContent }], {
+              console.log('🔄 Trying single content string approach...');
+              const content = messages.map((m: {role: string, content: string}) => `${m.role}: ${m.content}`).join('\n');
+              response = await client.add(content, {
                 user_id: userId,
                 run_id: runId
               });
-              console.log('✅ Concatenated content approach response:', response);
-            } catch (concatenatedError: any) {
-              console.log('❌ Concatenated content approach failed:', concatenatedError.message);
+              console.log('✅ Single content string approach response:', response);
+            } catch (singleContentError: any) {
+              console.log('❌ Single content string approach failed:', singleContentError.message);
               
               // Approach 3: Try with just user messages
               try {
@@ -85,7 +85,24 @@ export async function POST(request: NextRequest) {
                 }
               } catch (userOnlyError: any) {
                 console.log('❌ User messages only approach failed:', userOnlyError.message);
-                throw userOnlyError;
+                
+                // Approach 4: Try with minimal parameters
+                try {
+                  console.log('🔄 Trying minimal parameters approach...');
+                  const firstMessage = messages[0];
+                  if (firstMessage) {
+                    response = await client.add(firstMessage.content, {
+                      user_id: userId
+                    });
+                    console.log('✅ Minimal parameters approach response:', response);
+                  } else {
+                    response = [];
+                    console.log('⚠️ No messages to save');
+                  }
+                } catch (minimalError: any) {
+                  console.log('❌ Minimal parameters approach failed:', minimalError.message);
+                  throw minimalError;
+                }
               }
             }
           }
@@ -149,8 +166,17 @@ export async function POST(request: NextRequest) {
                   console.log('✅ No filters approach response:', memories);
                 } catch (noFiltersError: any) {
                   console.log('❌ No filters approach failed:', noFiltersError.message);
-                  memories = [];
-                  console.log('Cross-chat memory not supported by Mem0 - use simple memory instead');
+                  
+                  // Approach 4: Try with different parameter format
+                  try {
+                    console.log('🔄 Trying different parameter format...');
+                    memories = await client.getAll({ user_id: searchFilters.user_id, limit: 10 });
+                    console.log('✅ Different parameter format response:', memories);
+                  } catch (differentFormatError: any) {
+                    console.log('❌ Different parameter format failed:', differentFormatError.message);
+                    memories = [];
+                    console.log('Cross-chat memory not supported by Mem0 - use simple memory instead');
+                  }
                 }
               }
             }
