@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
             // Approach 2: Try with concatenated content
             try {
               console.log('🔄 Trying concatenated content approach...');
-              const concatenatedContent = messages.map(m => `${m.role}: ${m.content}`).join('\n');
+              const concatenatedContent = messages.map((m: {role: string, content: string}) => `${m.role}: ${m.content}`).join('\n');
               response = await client.add([{ role: 'user', content: concatenatedContent }], {
                 user_id: userId,
                 run_id: runId
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
               // Approach 3: Try with just user messages
               try {
                 console.log('🔄 Trying user messages only approach...');
-                const userMessages = messages.filter(m => m.role === 'user');
+                const userMessages = messages.filter((m: {role: string, content: string}) => m.role === 'user');
                 if (userMessages.length > 0) {
                   response = await client.add(userMessages, {
                     user_id: userId,
