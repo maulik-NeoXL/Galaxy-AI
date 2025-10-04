@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
           console.log('✅ Save successful - memories created:', response?.length || 0);
           
           return NextResponse.json({ success: true, data: response });
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Mem0 save error:', error);
           console.error('❌ Error details:', {
             message: error.message,
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
           
           console.log('Load response with filters:', memories);
           console.log('Memories count:', memories?.length || 0);
-        } catch (error) {
+        } catch (error: any) {
           console.log('Error loading memories:', error);
           memories = []; // Return empty array on error
         }
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Mem0 API error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
