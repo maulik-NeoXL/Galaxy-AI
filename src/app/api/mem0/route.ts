@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           });
           
           // Try different approaches to save memories
-          let response;
+          let response: any[] = [];
           
           // Approach 1: Try with individual messages
           try {
